@@ -34,9 +34,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 0.762,
-          "height": 1.524,
-          "width": 1.524
+          "drill": 0.0,
+          "height": 4.0,
+          "width": 1.0
         },
         "silk_line_width": 0.15,
         "silk_text_italic": false,
@@ -48,7 +48,13 @@
           "min_clearance": 0.5
         }
       },
-      "diff_pair_dimensions": [],
+      "diff_pair_dimensions": [
+        {
+          "gap": 0.0,
+          "via_gap": 0.0,
+          "width": 0.0
+        }
+      ],
       "drc_exclusions": [],
       "meta": {
         "version": 2
@@ -165,8 +171,22 @@
           "td_width_to_size_filter_ratio": 0.9
         }
       ],
-      "track_widths": [],
-      "via_dimensions": [],
+      "track_widths": [
+        0.0,
+        0.25,
+        0.4,
+        0.6
+      ],
+      "via_dimensions": [
+        {
+          "diameter": 0.0,
+          "drill": 0.0
+        },
+        {
+          "diameter": 0.4,
+          "drill": 0.3
+        }
+      ],
       "zones_allow_external_fillets": false
     },
     "layer_presets": [],
