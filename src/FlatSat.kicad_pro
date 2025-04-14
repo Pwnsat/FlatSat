@@ -474,7 +474,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "FlatSat-A.kicad_pro",
+    "filename": "FlatSat.kicad_pro",
     "version": 3
   },
   "net_settings": {
@@ -510,7 +510,7 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "exports/",
+      "plot": "../exports/",
       "pos_files": "",
       "specctra_dsn": "",
       "step": "",
