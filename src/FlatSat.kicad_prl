@@ -1,11 +1,11 @@
 {
   "board": {
-    "active_layer": 2,
-    "active_layer_preset": "Back Layers",
+    "active_layer": 5,
+    "active_layer_preset": "",
     "auto_track_width": true,
     "hidden_netclasses": [],
     "hidden_nets": [],
-    "high_contrast_mode": 0,
+    "high_contrast_mode": 1,
     "net_color_mode": 1,
     "opacity": {
       "images": 0.6,
@@ -49,7 +49,7 @@
       "conflict_shadows",
       "shapes"
     ],
-    "visible_layers": "00000000_00000000_00000002_2200888c",
+    "visible_layers": "00000000_00000000_55555555_57555575",
     "zone_display_mode": 0
   },
   "git": {
@@ -58,7 +58,7 @@
     "ssh_key": ""
   },
   "meta": {
-    "filename": "FlatSat-A.kicad_prl",
+    "filename": "FlatSat.kicad_prl",
     "version": 5
   },
   "net_inspector_panel": {

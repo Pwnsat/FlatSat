@@ -1,0 +1,19 @@
+Designator,Comment,Package,Mid X,Mid Y,Rotation,Side
+C1,100nF,603,0.5125,-2.5,180,top
+C2,2.2uf,603,6.85,-2.5,180,top
+C3,100nF,603,-16.76,-14.12,180,top
+C4,100nF,603,3.675,-2.5,180,top
+C5,100nF,603,0.5125,1.67,180,top
+C6,100nF,603,-16.72,-12.73,180,top
+D1,SK6812MINI,3535,15,-13.5,0,top
+D2,SK6812MINI,3535,15,13.5,180,top
+R4,4.7K,603,-10.13,-13.53,90,top
+R5,4.7K,603,-11.405,-13.53,90,top
+RN1,10K,Convex 4x0603,10,0.75,0,top
+U2,MPU6500,InvenSense_QFN-24_4x4mm_P0.5mm,5.5,0.75,-90,top
+U3,BME280,Bosch_LGA-8_2.5x2.5mm_P0.65mm_ClockwisePinNumbering,-13.6,-13.48,-90,top
+U5,Wio-SX1262,,4.7,9.25,90,top
+U6,Wio-SX1262,,4.7,-9.25,90,top
+J2,SM04B,JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal,-14,13.35,0,bottom
+J3,SM04B,JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal,-7,13.35,0,bottom
+J7,MicroSD,microSD_HC_Molex_104031-0811,8,9,180,bottom

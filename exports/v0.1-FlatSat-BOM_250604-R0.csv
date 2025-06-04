@@ -1,0 +1,11 @@
+Designator,Value,Footprint,Datasheet,LCSC,Qty
+"C1,C3,C4,C5,C6",100nF,603,~,C14663,5
+C2,2.2uf,603,~, C57895,1
+"D1,D2",SK6812MINI,3535,,C2922787,2
+"J2,J3",JST SH ,SM04B,~,C160404,2
+J7,MicroSD,,https://www.molex.com/en-us/products/part-detail/1040310811,C585350,1
+"R4,R5",4.7K,603,~, C99782,2
+RN1,10K,Resistor_SMD:R_Array_Convex_4x0603,~,C110924,1
+U2,MPU-6500,Sensor_Motion:InvenSense_QFN-24_4x4mm_P0.5mm,https://invensense.tdk.com/wp-content/uploads/2015/02/MPU-6000-Datasheet1.pdf, C50278,1
+U3,BME280,Package_LGA:Bosch_LGA-8_2.5x2.5mm_P0.65mm_ClockwisePinNumbering,https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme280-ds002.pdf,C92489,1
+"U5,U6",WIO-SX1262,,https://www.seeedstudio.com/Wio-SX1262-Wireless-Module-p-5981.html,NA,2

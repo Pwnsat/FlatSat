@@ -511,7 +511,7 @@
       "idf": "",
       "netlist": "",
       "plot": "../exports/",
-      "pos_files": "",
+      "pos_files": "../exports/",
       "specctra_dsn": "",
       "step": "",
       "svg": "",
