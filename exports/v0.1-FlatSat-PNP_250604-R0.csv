@@ -10,7 +10,7 @@ D2,SK6812MINI,3535,15,13.5,180,top
 R4,4.7K,603,-10.13,-13.53,90,top
 R5,4.7K,603,-11.405,-13.53,90,top
 RN1,10K,Convex 4x0603,10,0.75,0,top
-U2,MPU6500,InvenSense_QFN-24_4x4mm_P0.5mm,5.5,0.75,-90,top
+U2,MPU6500,InvenSense_QFN-24_4x4mm_P0.5mm,5.2,1,-90,top
 U3,BME280,Bosch_LGA-8_2.5x2.5mm_P0.65mm_ClockwisePinNumbering,-13.6,-13.48,-90,top
 U5,Wio-SX1262,,4.7,9.25,90,top
 U6,Wio-SX1262,,4.7,-9.25,90,top

@@ -191,6 +191,7 @@
       ],
       "track_widths": [
         0.0,
+        0.15,
         0.25,
         0.4,
         0.6
@@ -513,7 +514,7 @@
       "plot": "../exports/",
       "pos_files": "../exports/",
       "specctra_dsn": "",
-      "step": "",
+      "step": "../exports/v0-FlatSat.step",
       "svg": "",
       "vrml": ""
     },
