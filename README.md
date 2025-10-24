@@ -11,6 +11,6 @@ Check the exports directory for 3D printable enclosure, FlatSat model, and PCB G
 ## More about PWNSAT and FlatSat project
 Check our web page [pwnsat.org](https://pwnsat.org/) and [flatsat.org](https://flatsat.org/)
 
-# Firmware
+# Firmware flatsat
 
 https://github.com/Pwnsat/FlatSat_Firmware
