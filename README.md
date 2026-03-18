@@ -1,7 +1,7 @@
 # FlatSat 🛰️
 The Hackable Satellite 
 
-Flatsat 2 is a hardware based training platform designed to be vulnerable — on purpose. It’s built for hackers, engineers, and space enthusiasts who want to dive deep into space-grade systems, learn cybersecurity concepts, and prototype their own payloads.
+Flatsat v1.0 is a hardware based training platform designed to be vulnerable — on purpose. It’s built for hackers, engineers, and space enthusiasts who want to dive deep into space-grade systems, learn cybersecurity concepts, and prototype their own payloads.
 
 ### What You Can Do With Flatsat
 - Hands-on Learning – Use Flatsat as the hardware companion to the PwnSat course, with structured lessons on binary exploitation, secure communication, reverse engineering, and space protocols.
