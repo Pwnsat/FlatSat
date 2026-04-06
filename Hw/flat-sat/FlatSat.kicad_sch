@@ -24568,7 +24568,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "W25Q16JV"
+		(property "Value" "IS25LP032D-JTLE-TR"
 			(at 46.4694 104.14 0)
 			(effects
 				(font
@@ -24604,7 +24604,7 @@
 				(hide yes)
 			)
 		)
-		(property "Mouser#" "454-W25Q16JVUUIQTR"
+		(property "Mouser#" ""
 			(at 44.45 114.3 0)
 			(effects
 				(font
@@ -24613,7 +24613,7 @@
 				(hide yes)
 			)
 		)
-		(property "manf#" "W25Q16JVUUIQ TR"
+		(property "manf#" "IS25LP032D-JTLE-TR"
 			(at 44.45 114.3 0)
 			(effects
 				(font
@@ -24622,7 +24622,7 @@
 				(hide yes)
 			)
 		)
-		(property "provedor" "Mouser"
+		(property "provedor" "LCSC"
 			(at 44.45 114.3 0)
 			(effects
 				(font
@@ -24640,7 +24640,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC#" "C571259"
+		(property "LCSC#" "C5119926"
 			(at 44.45 114.3 0)
 			(effects
 				(font
