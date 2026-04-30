@@ -6,7 +6,7 @@ Offensive Satellite Security Lab
 
 * [Hardware](##1.Hardware)
 * [Firmware](##2.Firmware)
-* [Weaponization](##3.Subsystem_Logic_&_Workers)
+* [Subsystem_Logic](##3.Subsystem_Logic_&_Workers)
 
 
 ## 1.Hardware
