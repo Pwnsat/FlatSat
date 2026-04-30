@@ -285,7 +285,7 @@ Data Length:        0
 None
 ```
 
-## 3. Data Handling & RF Vulnerabilities
+## 3. Data Handling Vulnerabilities
 
 ### 3.1 Telemetry Leakage (Information Disclosure)
 
@@ -305,16 +305,36 @@ The system performs a strange "Double Decode." It receives a radio packet and th
 
 - **Why it’s a vulnerability:** This introduces a "WAF-bypass" style vulnerability. If there were a security filter looking for specific binary command patterns, an attacker could encode those commands as ASCII Hex to bypass the filter, which the firmware then "helpfully" decodes back into the dangerous binary command.
 
+## 4. Satellite Communication Vulnerabilities and Attacks
+
+### 4.1 Eavesdropping Attack 
+
+
+
+### 4.2 Command Injection Attack
+
+
+
+
+### 4.3 Fuzzing Attack
+
+
+
+### 4.4 Spoofing Attack
+
+
+
+
 ## 4. Summary
 
 | **Vulnerability** | **Type** | **Complexity** | **Impact** |
 | :--- | :--- | :--- | :--- |
-| **Command Injection** | Injection | Medium | **Critical (RCE)** |
+| **Command Injection Attack** | Injection | Medium | **Critical (RCE)** |
 | **Broadcast Underflow** | Memory Corruption | Medium | **Critical (RCE)** |
 | **No Auth/Enc** | Broken Auth | Low | **Critical (Takeover)** |
-| **Spoofing** | Identity Theft | Medium | **Critical (Impersonation)** |
+| **Spoofing Attack** | Identity Theft | Medium | **Critical (Impersonation)** |
 | **Unauthenticated Reset** | DoS | Low | High (Mission Loss) |
-| **Fuzzing** | Protocol/Input | Medium | High (DoS or Crash) |
-| **Eavesdropping** | Information Disclosure | Low | High (Data Leakage) |
+| **Fuzzing Attack** | Protocol/Input | Medium | High (DoS or Crash) |
+| **Eavesdropping Attack** | Information Disclosure | Low | High (Data Leakage) |
 | **Double Decoding** | Logic Flaw | Medium | Medium (Filter Bypass) |
 
