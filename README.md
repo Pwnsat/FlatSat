@@ -6,7 +6,8 @@ Offensive Satellite Security Lab
 
 * [Hardware](##1.Hardware)
 * [Firmware](##2.Firmware)
-* [Subsystem_Logic](##3.Subsystem_Logic_&_Workers)
+* [Subsystem Logic](##3.Subsystem_Logic_&_Workers)
+* [Satellite Red Teaming OPS](##4.Satellite_Red_Teaming_OPS)
 
 
 ## 1.Hardware
@@ -191,7 +192,7 @@ The dual-core architecture uses Core 1 as a USB-to-Radio bridge. If the On-Board
 
 ---
 
-# Red Teaming Operations
+## Satellite Red Teaming OPS
 
 ## 1. Memory Corruption Vulnerabilities
 
@@ -306,10 +307,14 @@ The system performs a strange "Double Decode." It receives a radio packet and th
 
 ## 4. Summary
 
-|**Vulnerability**|**Type**|**Complexity**|**Impact**|
-|---|---|---|---|
-|**Broadcast Underflow**|Memory Corruption|Medium|**Critical (RCE)**|
-|**No Auth/Enc**|Broken Auth|Low|**Critical (Takeover)**|
-|**Unauthenticated Reset**|DoS|Very Low|High (Mission Loss)|
-|**Double Decoding**|Logic Flaw|Medium|Medium (Filter Bypass)|
+| **Vulnerability** | **Type** | **Complexity** | **Impact** |
+| :--- | :--- | :--- | :--- |
+| **Command Injection** | Injection | Medium | **Critical (RCE)** |
+| **Broadcast Underflow** | Memory Corruption | Medium | **Critical (RCE)** |
+| **No Auth/Enc** | Broken Auth | Low | **Critical (Takeover)** |
+| **Spoofing** | Identity Theft | Medium | **Critical (Impersonation)** |
+| **Unauthenticated Reset** | DoS | Low | High (Mission Loss) |
+| **Fuzzing** | Protocol/Input | Medium | High (DoS or Crash) |
+| **Eavesdropping** | Information Disclosure | Low | High (Data Leakage) |
+| **Double Decoding** | Logic Flaw | Medium | Medium (Filter Bypass) |
 
