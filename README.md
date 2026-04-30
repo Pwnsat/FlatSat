@@ -2,7 +2,14 @@
 
 Offensive Satellite Security Lab
 
-## Hardware
+## Contents
+
+* [Hardware](#Hardware)
+* [Firmware](#Firmware)
+* [Weaponization](#3._Subsystem_Logic_&_Workers)
+
+
+## 1. Hardware
 ### Components
 - **On-Board Computer**: RP2040
 - **Command and Data Handling**: SX1262 (2)
@@ -14,7 +21,7 @@ Offensive Satellite Security Lab
 - UART
 - SWD
 
-## Firmware
+## 2. Firmware
 
 ### 1. System Architecture
 
@@ -26,7 +33,7 @@ The firmware utilizes a **Asymmetric Multiprocessing (AMP)** approach on the RP2
 
 > The OBC Data Link is used in case you don't have access to a SDR device to collect and send packets.
 
-#### 1.2 Hardware Infrastructure
+##1.2 Hardware Infrastructure
 
 The infrastructure is designed for **FlatSat** testing, where hardware components are laid out for accessibility and auditing.
 
@@ -39,18 +46,18 @@ The infrastructure is designed for **FlatSat** testing, where hardware component
 |**ENV**|BME280 Environment Sensor|I2C (SDA 20, SCL 21)|
 |**Status**|WS2812B NeoPixel|GPIO 15|
 
-### 2. Communication Protocol: Space Packet Protocol (SPP)
+#2. Communication Protocol: Space Packet Protocol (SPP)
 
 The core of the communication system is the **CCSDS Space Packet Protocol**. This allows the spacecraft to route data using **Application Process Identifiers (APIDs)**, enabling modular subsystem addressing.
 
-#### 2.1 Packet Encapsulation
+##2.1 Packet Encapsulation
 
 Every packet consists of a **Primary Header** (6 bytes) and a **Data Field**.
 1. **Packet Identification (2 bytes):** Contains the Version, Type (0 for TM, 1 for TC), and the APID.
 2. **Packet Sequence Control (2 bytes):** Contains Segmentation Flags and the 14-bit Sequence Count.
 3. **Packet Length (2 bytes):** Total length of the data field minus one.
 
-#### 2.2 APID Registry (Mission Control)
+##2.2 APID Registry (Mission Control)
 
 The firmware categorizes traffic into **Telecommands (TC)** and **Telemetry (TM)**:
 
@@ -64,7 +71,7 @@ The firmware categorizes traffic into **Telecommands (TC)** and **Telemetry (TM)
 
 ---
 
-### 3. Subsystem Logic & Workers
+##3. Subsystem Logic & Workers
 
 The firmware operates as a non-blocking state machine, governed by the `telemetryRadioWorker`.
 
