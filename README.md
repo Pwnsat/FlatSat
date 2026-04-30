@@ -4,12 +4,12 @@ Offensive Satellite Security Lab
 
 ## Contents
 
-* [Hardware](#Hardware)
+* [Hardware](##1.Hardware)
 * [Firmware](#Firmware)
 * [Weaponization](#3._Subsystem_Logic_&_Workers)
 
 
-## 1. Hardware
+##1.Hardware
 ### Components
 - **On-Board Computer**: RP2040
 - **Command and Data Handling**: SX1262 (2)
