@@ -5,11 +5,11 @@ Offensive Satellite Security Lab
 ## Contents
 
 * [Hardware](##1.Hardware)
-* [Firmware](#Firmware)
-* [Weaponization](#3._Subsystem_Logic_&_Workers)
+* [Firmware](##2.Firmware)
+* [Weaponization](##3.Subsystem_Logic_&_Workers)
 
 
-##1.Hardware
+## 1.Hardware
 ### Components
 - **On-Board Computer**: RP2040
 - **Command and Data Handling**: SX1262 (2)
@@ -21,7 +21,7 @@ Offensive Satellite Security Lab
 - UART
 - SWD
 
-## 2. Firmware
+## 2.Firmware
 
 ### 1. System Architecture
 
@@ -71,7 +71,7 @@ The firmware categorizes traffic into **Telecommands (TC)** and **Telemetry (TM)
 
 ---
 
-##3. Subsystem Logic & Workers
+## 3.Subsystem Logic & Workers
 
 The firmware operates as a non-blocking state machine, governed by the `telemetryRadioWorker`.
 
