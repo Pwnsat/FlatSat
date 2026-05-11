@@ -1,14 +1,12 @@
 # Flatsat 
 
-Offensive Satellite Security Lab
-
-## Contents
 Flatsat v1.0 is a hardware based training platform designed to be vulnerable — on purpose. It’s built for hackers, engineers, and space enthusiasts who want to dive deep into space-grade systems, learn cybersecurity concepts, and prototype their own payloads.
 
 * [Hardware](##1.Hardware)
 * [Firmware](##2.Firmware)
 * [Subsystem Logic](##3.Subsystem_Logic_&_Workers)
 * [Satellite Red Teaming OPS](##4.Satellite_Red_Teaming_OPS)
+
 ### What You Can Do With Flatsat
 - Hands-on Learning – Use Flatsat as the hardware companion to the PwnSat course, with structured lessons on binary exploitation, secure communication, reverse engineering, and space protocols.
 - Hack Real Vulnerabilities – Explore and exploit firmware designed to simulate real-world satellite systems and vulnerabilities. It’s a safe playground for learning and discovery.
@@ -16,6 +14,11 @@ Flatsat v1.0 is a hardware based training platform designed to be vulnerable —
 - Prototype Your Payloads – Use the onboard components to develop and test your own payload logic, radio communication, or telemetry systems before launching bigger projects.
 
 Flatsat uses ISM (Industrial, Scientific, and Medical) band frequencies for all RF communication — typically 433 MHz or 915 MHz, depending on your region. These frequencies are internationally reserved for unlicensed, experimental, and educational use.
+❌ X-band
+❌ Ka-band
+❌ S-band
+This ensures that Flatsat does not interfere with any production space systems, licensed satellites, or critical ground infrastructure.
+Flatsat is designed to help you learn and prototype radio systems safely and legally — all while gaining real-world skills in RF communication, signal analysis, and protocol fuzzing.
 
 ## 1.Hardware
 ### Components
@@ -29,15 +32,11 @@ We do not use sensitive or restricted space communication bands like:
 - I2C
 - UART
 - SWD
-❌ X-band
-❌ Ka-band
-❌ S-band
-This ensures that Flatsat does not interfere with any production space systems, licensed satellites, or critical ground infrastructure.
-Flatsat is designed to help you learn and prototype radio systems safely and legally — all while gaining real-world skills in RF communication, signal analysis, and protocol fuzzing.
-## Firmware
-https://github.com/Pwnsat/FlatSat_Firmware
 
-## 2.Firmware
+
+## 2. Firmware
+
+https://github.com/Pwnsat/FlatSat_Firmware
 
 ### 1. System Architecture
 
@@ -62,18 +61,18 @@ The infrastructure is designed for **FlatSat** testing, where hardware component
 |**ENV**|BME280 Environment Sensor|I2C (SDA 20, SCL 21)|
 |**Status**|WS2812B NeoPixel|GPIO 15|
 
-#2. Communication Protocol: Space Packet Protocol (SPP)
+# 2. Communication Protocol: Space Packet Protocol (SPP)
 
 The core of the communication system is the **CCSDS Space Packet Protocol**. This allows the spacecraft to route data using **Application Process Identifiers (APIDs)**, enabling modular subsystem addressing.
 
-##2.1 Packet Encapsulation
+## 2.1 Packet Encapsulation
 
 Every packet consists of a **Primary Header** (6 bytes) and a **Data Field**.
 1. **Packet Identification (2 bytes):** Contains the Version, Type (0 for TM, 1 for TC), and the APID.
 2. **Packet Sequence Control (2 bytes):** Contains Segmentation Flags and the 14-bit Sequence Count.
 3. **Packet Length (2 bytes):** Total length of the data field minus one.
 
-##2.2 APID Registry (Mission Control)
+## 2.2 APID Registry (Mission Control)
 
 The firmware categorizes traffic into **Telecommands (TC)** and **Telemetry (TM)**:
 
