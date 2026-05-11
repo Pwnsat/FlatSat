@@ -377,3 +377,6 @@ Designed by Electronic Cats and PWNSAT.
 Hardware released under an CERN Open Hardware Licence v1.2. See the LICENSE_HARDWARE file for more information.
 
 Electronic Cats and PWNSAT is a registered trademark, please do not use if you sell these PCBs.
+
+# Special Thanks
+A special thanks to **Alex Lynd**. His support made it possible to kick off the first version of the project, and his contribution remains a fundamental part of PwnSat. His work will always be embedded in what this project has become.
