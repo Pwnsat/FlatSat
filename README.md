@@ -33,7 +33,7 @@ FlatSat is a low-cost, dual-core educational platform designed to simulate the a
 
 ---
 
-## 📖 Getting Started & Documentation
+##  Getting Started & Documentation
 
 The complete documentation, including hardware schematics, firmware breakdown, and exploitation guides, is located in the **GitHub Wiki**.
 
