@@ -4,7 +4,7 @@
 
 # FlatSat v1.0
 
-**The world’s first open-source, dual-core hardware platform vulnerable-by-design, engineered specifically to learn space hacking.**
+**The world’s first open-source and hardware platform vulnerable-by-design, engineered specifically to learn space hacking adn aerospace cybersecurity.**
 
 </div>
 
@@ -56,26 +56,17 @@ All deep technical documentation, source analysis, and setup guides have been ce
 
 This project is an open-source initiative maintained by PWNSAT and Electronic Cats. Contributions are highly welcome.
 
-## How to contribute <img src="https://electroniccats.com/wp-content/uploads/2018/01/fav.png" height="35"><img src="https://raw.githubusercontent.com/gist/ManulMax/2d20af60d709805c55fd784ca7cba4b9/raw/bcfeac7604f674ace63623106eb8bb8471d844a6/github.gif" height="30">
-
-Please read the document [**Contribution manual**](https://github.com/ElectronicCats/electroniccats-cla/blob/main/electroniccats-contribution-manual.md) which will show you how to contribute your changes to the project.
-
-✨ Thanks to all our [Contributors](https://github.com/ElectronicCats/Munchkin/graphs/contributors)! ✨
-
-See [**_Electronic Cats CLA_**](https://github.com/ElectronicCats/electroniccats-cla/blob/main/electroniccats-cla.md) for more information.
-
-See the [**Community code of conduct**](https://github.com/ElectronicCats/electroniccats-cla/blob/main/electroniccats-community-code-of-conduct.md) for a vision of the community we want to build and what we expect from it.
 
 ## License
 
 Electronic Cats invests time and resources providing this open source design, please support Electronic Cats and open-source hardware by purchasing products from Electronic Cats!
 
-Designed by Electronic Cats and PWNSAT.
+Designed by PWNSAT and Electronic Cats.
 
 Hardware released under an CERN Open Hardware Licence v1.2. See the LICENSE_HARDWARE file for more information.
 
-Electronic Cats and PWNSAT is a registered trademark, please do not use if you sell these PCBs.
+PWNSAT and Electronic Cats are a registered trademark, please do not use if you sell these PCBs.
 
 # Special Thanks
-A special thanks to **Alex Lynd**. His support made it possible to kick off the first version of the project, and his contribution remains a fundamental part of PwnSat. His work will always be embedded in what this project has become.
+A special thanks to **Alex Lynd**. His support made it possible to kick off the first version of the project, and his contribution remains a fundamental part of PWNSAT. His work will always be embedded in what this project has become.
 
