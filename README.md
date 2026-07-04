@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="wiki/flatsat-wiki-banner.png" alt="FlatSat Satellite Security Research Platform Banner" width="100%">
+<img src="https://raw.githubusercontent.com/wiki/Pwnsat/FlatSat/flatsat-wiki-banner.png" alt="FlatSat Satellite Security Research Platform Banner" width="100%">
 
 # FlatSat v1.0
 
