@@ -40,6 +40,13 @@ FlatSat's physical architecture layout is fully accessible and designed for open
 
 ---
 
+## Firmware & Attacks
+
+* **[`Firmware/`](Firmware/):** The vulnerable-by-design firmware source, a pre-built `.uf2` ready to flash (`Firmware/build/`), and `platformio.ini` to build it yourself. See [`Firmware/README.md`](Firmware/README.md) for the full diff against the public baseline.
+* **[`Attacks/`](Attacks/):** Eight attack scripts (`00`–`07`) exploiting the vulnerabilities above, each in an RF variant (HackRF/RTL-SDR) and a USB variant. See [`Attacks/README.md`](Attacks/README.md) for what's here, and the wiki (below) for the full step-by-step walkthrough of each one.
+
+---
+
 ## Technical Documentation and Guides (Wiki)
 
 All deep technical documentation, source analysis, and setup guides have been centralized. If you want to start compiling, debugging, or exploiting the platform, please visit the [FlatSat Wiki](https://github.com/Pwnsat/FlatSat/wiki):
@@ -49,6 +56,7 @@ All deep technical documentation, source analysis, and setup guides have been ce
 * **[03. Core Firmware Architecture](https://github.com/Pwnsat/FlatSat/wiki/Firmware-&-System-Architecture):** Deep dive into the Asymmetric Multiprocessing (AMP) architecture dividing tasks across Core 0 and Core 1.
 * **[04. Space Packet Protocol (CCSDS)](https://github.com/Pwnsat/FlatSat/wiki/Space-Packet-Protocol---CCSDS):** Aerospace framing standards, packet encapsulation structure, and the active APID registry.
 * **[05. Offensive Attack Vectors](https://github.com/Pwnsat/FlatSat/wiki/Satellite-Hacking-&-Attack-Vectors):** The security playground. Explaining packet fuzzing, telecommand spoofing, buffer overflows, and unauthorized subsystem manipulation.
+* **[06. Attack Walkthroughs (00–07)](https://github.com/Pwnsat/FlatSat/wiki/Attack-Walkthroughs-00-07):** Step-by-step: prerequisites, the exact command, and how to confirm each of the 8 validated attacks worked against real hardware.
 
 ---
 
@@ -63,7 +71,7 @@ Electronic Cats invests time and resources providing this open source design, pl
 
 Designed by PWNSAT and Electronic Cats.
 
-Hardware released under an CERN Open Hardware Licence v1.2. See the LICENSE_HARDWARE file for more information.
+Hardware released under an CERN Open Hardware Licence v1.2. See the LICENSE_HARDWARE file for more information. Firmware and attack scripts are released under GPL-2.0-or-later — see LICENSE_FIRMWARE and Attacks/LICENSE.
 
 PWNSAT and Electronic Cats are a registered trademark, please do not use if you sell these PCBs.
 
