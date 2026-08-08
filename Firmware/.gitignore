@@ -1,0 +1,12 @@
+.DS_Store
+.pio/
+.vscode/
+*.uf2
+*.bin
+*.elf
+*.hex
+
+# Pre-built release binary -- intentionally tracked, exempt from the
+# ignore rules above.
+!build/
+!build/flatsat-firmware.uf2
