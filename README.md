@@ -64,6 +64,9 @@ All deep technical documentation, source analysis, and setup guides have been ce
 
 This project is an open-source initiative maintained by PWNSAT and Electronic Cats. Contributions are highly welcome.
 
+## Disclaimer
+
+This project was created for educational purposes, to teach and learn aerospace cybersecurity. Neither PWNSAT nor Electronic Cats are responsible for how the knowledge, code, or tools hosted in this repository are used. Use only against hardware, firmware, or signal sources you own or are explicitly authorized to test.
 
 ## License
 
