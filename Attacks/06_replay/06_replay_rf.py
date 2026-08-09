@@ -1,54 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# 06_replay_rf.py -- no anti-replay protection (dossier finding #5). Root
-# cause: New-firmware/worker.cpp's commandHandlerInternal() parses the SPP
-# primary header's sequence_count (worker.cpp ~line 413) but ONLY ever
-# uses it for a debug log line -- it's never compared against a
-# last-seen/high-water-mark value, so there is no way for the firmware to
-# tell "fresh command" from "a byte-exact copy of one it already executed
-# an hour ago" apart. No firmware or ground-station changes were needed to
-# build this attack: the vulnerability is already present in the REAL
-# firmware (New-firmware/, not a debug variant) exactly as flashed today.
+# 06_replay_rf.py -- no anti-replay protection. Root cause:
+# commandHandlerInternal() parses the SPP header's sequence_count but only
+# uses it for a debug log line -- it's never compared against a last-seen
+# value, so the firmware can't tell a fresh command from a byte-exact copy
+# of one it already executed. Present in the REAL firmware as flashed today.
 #
-# What this proves: capture (or, as here, just build) ONE legitimate TC,
-# transmit it once (the "real" send), then transmit the IDENTICAL raw
-# bytes again later, unchanged -- same sequence_count, same payload, same
-# AES ciphertext (ECB + no IV, so identical plaintext always encrypts to
-# identical ciphertext too, see finding #12). If the firmware had any
-# freshness/anti-replay check, the second copy would be rejected. It
-# isn't -- the FlatSat processes it again and answers with a second,
-# separate STATUS TM (its own outgoing TM sequence_count increments both
-# times, and the embedded uptime_s field advances too, proving two
-# genuinely separate executions of the same static command -- not one
-# cached reply sent twice).
+# What this proves: build ONE legitimate TC, transmit it, then transmit the
+# IDENTICAL raw bytes again later -- same sequence_count, same payload, same
+# AES ciphertext (ECB + no IV, so identical plaintext always encrypts
+# identically). With any freshness check the second copy would be rejected;
+# instead the FlatSat processes it again and answers with a second, separate
+# STATUS TM (its outgoing TM sequence_count and uptime_s both advance,
+# proving two separate executions -- not one cached reply sent twice).
 #
-# Uses STATUS (TC APID 0x0C -> TM APID 0x0C) as the replayed command, NOT
-# PING. PING was tried first and dropped: the firmware ALSO emits a PING
-# TM on its own, automatically, every ~5s as part of the serial console's
-# periodic "SYSTEM STATUS DASHBOARD" rotation (confirmed live -- a PING TM
-# showed up on the wire before this script ever transmitted anything).
-# Combined with PING ACK's payload being a fixed constant (no content that
-# varies run to run), there is no way to tell "the FlatSat answering MY
-# replayed command" apart from "a routine periodic ping that happened to
-# land in the listen window" from the RF capture alone -- confirmation was
-# structurally unreliable. STATUS doesn't have this problem: per
-# PWNSAT-C3's own frontend (index.html, the comment above its periodic
-# polling setIntervals), STATUS/GS_STATUS/PAYLOAD_STATUS are the three TM
-# types confirmed command-response-only in this firmware -- worker.cpp's
-# telemetryRadioWorker (the periodic dashboard driver) never calls
-# telemetrySPPTransmitMissionStatus on its own. Any STATUS TM captured
-# during this script's listen window is unambiguously a reply to a TC we
-# just sent.
+# Uses STATUS (TC 0x0C -> TM 0x0C), NOT PING: the firmware emits PING TMs on
+# its own every ~5s, and PING ACK's payload is a fixed constant, so a
+# replayed PING can't be told apart from a routine one. STATUS is
+# command-response only, so any STATUS TM in the listen window is
+# unambiguously a reply to our TC.
 #
-# This is deliberately NOT about which command is dangerous to replay
-# (SET_THRUSTER or GS_ACCESS would be more "dangerous" targets) -- it's
-# about proving the replay window exists at all, for ANY command,
-# including ones with real side effects.
-#
-# Needs a Python with gnuradio importable -- run it and this script will
-# say so with concrete next steps if you've got the wrong one, see
-# require_gnuradio.py / PWNSAT-C3's INSTALL.md (github.com/Pwnsat/PWNSAT-C3).
+# Not about which command is dangerous to replay -- about proving the replay
+# window exists at all, for ANY command, including ones with side effects.
 
 import argparse
 import sys
@@ -62,7 +36,7 @@ sys.stdout.reconfigure(line_buffering=True)
 from pwnsat_packets import build_command_packet, decode_packet, decrypt_payload  # noqa: E402
 
 from require_gnuradio import check as _check_gnuradio  # noqa: E402
-_check_gnuradio()  # exits with a clear message here if this Python can't import gnuradio
+_check_gnuradio()
 
 from pwnsat_lora_tx import UPLINK_FREQ_HZ, transmit_packet  # noqa: E402
 from pwnsat_catsniffer_rx import CatSnifferRX  # noqa: E402

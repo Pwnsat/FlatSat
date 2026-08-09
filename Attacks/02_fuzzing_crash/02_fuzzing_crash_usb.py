@@ -1,26 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# 02_fuzzing_crash_usb.py -- BROADCAST_MSG integer underflow (dossier
-# section 03, finding #10, CRITICAL), delivered over FlatSat's
-# real USB CDC serial link instead of RF. "Round 1" (USB) -- see
-# 02_fuzzing_crash_rf.py in this same folder for the original RF version,
-# which has the full root-cause writeup (worker.cpp's BROADCAST_MSG branch,
-# unsigned size_t underflow, unbounded memcpy).
+# 02_fuzzing_crash_usb.py -- BROADCAST_MSG integer underflow over the USB
+# CDC serial link instead of RF. See 02_fuzzing_crash_rf.py for the full
+# root-cause writeup (unsigned size_t underflow, unbounded memcpy).
 #
-# One packet, no retries -- delivered directly over the wire instead of
-# through HackRF. The crash itself doesn't care how the packet arrived.
-#
-# Expected result: the board hard-faults and reboots -- unlike PWNCUBE,
-# this is a CLEAN reboot (RP2040 resets cleanly, no permanently-dead
-# internal bus the way PWNCUBE's rpmsg channel dies). The USB CDC port
-# itself drops and a NEW one re-enumerates a few seconds later -- this
-# script's own USB connection will NOT survive the crash, and there is
-# nothing meaningful to read back over it afterward (same reasoning as the
-# RF version: check the FlatSat's serial console or PWNSAT-C3 for the
-# reboot instead).
-#
-# NOT YET VALIDATED ON REAL HARDWARE -- see lib/flatsat_usb.py's header.
+# Expected: the board hard-faults and reboots. The USB CDC port drops and a
+# new one re-enumerates a few seconds later, so this script's own connection
+# does not survive the crash -- check the FlatSat's serial console or
+# PWNSAT-C3 for the reboot (uptime resets to 0).
 
 import argparse
 import sys

@@ -8,55 +8,31 @@
 #
 # pwnsat_lora_tx.py
 #
-# HackRF LoRa transmitter for the DEFCON-DEMO attack scripts. Sibling of
-# ../ground-station/gradio/pwnsat_lora_rx.py -- same
-# gnuradio.lora_sdr LoRa encoding blocks, same project, mirror image (TX
-# instead of RX), but NOT a live GNU Radio flowgraph streaming to the
-# radio the way that RX side is. Read on for why.
+# HackRF LoRa transmitter for the attack scripts in this repo. Mirror
+# image of PWNSAT-C3's live RX flowgraph (same gnuradio.lora_sdr LoRa
+# encoding blocks), but NOT a live GNU Radio flowgraph streaming to the
+# radio the way the RX side is -- read on for why.
 #
 # NOTE: this must run under a Python that has `gnuradio` and
-# `gnuradio.lora_sdr` importable -- on this project's dev machine that's
-# Homebrew's python@3.14 (`brew install gnuradio`), NOT the system python3
-# or PWNSAT-C3 backend's own .venv. attacks/*.py scripts call
-# require_gnuradio.check() before importing this module, so running under
-# the wrong Python fails there with a clear message instead of here.
+# `gnuradio.lora_sdr` importable -- typically a Homebrew/system Python
+# with GNU Radio installed, NOT PWNSAT-C3 backend's own .venv. Attack
+# scripts call require_gnuradio.check() before importing this module, so
+# running under the wrong Python fails there with a clear message
+# instead of here.
 #
-# Radio parameters below (918 MHz uplink, BW 250 kHz, SF7, CR 4/5, sync
-# word 0x12, explicit header, LoRa PHY CRC disabled) are copied directly
-# from New-firmware/ruplink.cpp's uplinkRadioConfigure() -- see the
-# comment next to UPLINK_* below for the exact source lines. Get any of
-# these wrong and the SX1262 on the FlatSat simply never sees the packet.
+# Radio parameters below (918 MHz uplink, BW 250 kHz, SF7, CR 4/5, sync word
+# 0x12, explicit header, PHY CRC disabled) are copied from
+# New-firmware/ruplink.cpp's uplinkRadioConfigure(). Get any wrong and the
+# SX1262 never sees the packet.
 #
-# ---------------------------------------------------------------------
-# Why this renders to a file and shells out to hackrf_transfer, instead
-# of streaming live through a GNU Radio soapy.sink (what every earlier
-# version of this module did):
-#
-# On-air debugging this session (see DEFCON-DEMO session notes / git
-# history around 2026-07-17) found that the live soapy.sink -> HackRF
-# path does not reproduce a correct LoRa chirp on air, even after fixing
-# two real, confirmed bugs along the way (HackRF's AMP gain stage never
-# enabled, and a blocks.message_strobe that doesn't fire its first
-# message until a full period has elapsed rather than immediately). A raw
-# IQ capture of what the live path actually put on air showed strong RF
-# energy but an unmodulated-looking, non-sweeping signal lasting far
-# longer than a real LoRa frame should. The exact same block chain
-# (whitening -> header -> add_crc -> hamming_enc -> interleaver ->
-# gray_demap -> modulate), captured to a file instead of a live sink,
-# produced textbook-correct LoRa baseband: 8 identical up-chirps sweeping
-# cleanly from -BW/2 to +BW/2, followed by distinct sync-word symbols --
-# confirmed at both 1x (samp_rate=bw) and 8x (samp_rate=2 MSps, what
-# HackRF actually needs) oversampling. Playing that exact file back with
-# the standalone `hackrf_transfer` CLI tool (bypassing GNU Radio's
-# real-time streaming path entirely) reproduced the same clean chirp
-# shape in a fresh over-the-air capture.
-#
+# Why this renders to a file and shells out to hackrf_transfer instead of
+# streaming live through a GNU Radio soapy.sink: the live soapy.sink -> HackRF
+# path does not reliably reproduce a correct LoRa chirp on air. The same
+# block chain captured to a FILE produces textbook-correct LoRa baseband, and
+# hackrf_transfer replaying that file reproduces a clean chirp on air.
 # Conclusion: gr-lora_sdr's encoding is correct; something in GNU Radio's
-# live SoapySDR-sink-to-HackRF streaming (buffering/timing/throughput --
-# never fully root-caused) corrupts it before it leaves the antenna.
-# Rather than keep chasing that, this module keeps 100% of the LoRa
-# protocol correctness in gr-lora_sdr (nothing about *what* gets
-# transmitted changes) and only replaces *how* it reaches the antenna.
+# live SoapySDR-sink streaming corrupts it. So this module keeps all LoRa
+# correctness in gr-lora_sdr and only changes how it reaches the antenna.
 
 import os
 import shutil
@@ -94,15 +70,14 @@ DEFAULT_HACKRF_TX_SAMP_RATE = 2_000_000
 
 # hackrf_transfer's -t file is raw signed-8-bit interleaved I/Q. gr-lora_sdr
 # chirps are constant-envelope with magnitude ~1.0 -- scale by 100 rather
-# than the full int8 range (127) to leave headroom. Confirmed empirically
-# this session: scaling to the full range made a nearby diagnostic RTL-SDR
-# receiver clip (magnitude readings >1.0, distorted chirp shape); 100 did
-# not, while still comfortably above the receiver's noise floor.
+# than the full int8 range (127) to leave headroom: scaling to the full
+# range makes a nearby receiver clip (magnitude readings >1.0, distorted
+# chirp shape), while 100 stays comfortably above the noise floor.
 HACKRF_IQ_SCALE = 100
 
-# hackrf_transfer should finish almost instantly for these packet sizes
-# (measured ~30ms on this session's hardware for a ~50k-sample frame) --
-# this is just a safety net against a genuine hang, not a tuned value.
+# hackrf_transfer finishes almost instantly for these packet sizes
+# (tens of ms for a ~50k-sample frame) -- this is just a safety net
+# against a genuine hang, not a tuned value.
 HACKRF_TRANSFER_TIMEOUT_S = 15
 
 
@@ -113,24 +88,21 @@ def _render_baseband(raw_spp: bytes, *, bandwidth: int, spreading_factor: int,
     to the resulting raw complex64 (gr_complex) baseband IQ file.
 
     Feeds whitening over its STREAM input (is_hex=True), not its message
-    port. Confirmed this session that the message port corrupts any byte
-    >=0x7F: whitening's message handler calls pmt_symbol_to_string()
-    internally and something downstream of that re-encodes the result as
-    UTF-8, silently turning one high-value byte into two bytes -- caught
-    by comparing a real FlatSat serial log against this module's own
-    known ciphertext and finding every byte >=0x80 replaced by its exact
-    2-byte UTF-8 encoding (e.g. real byte 0xF7 arriving as the two bytes
-    C3 B7). A raw PDU (dict, u8vector) isn't a fix either -- whitening's
-    message port rejects it outright ("wrong_type" from
+    port. The message port corrupts any byte >=0x7F: whitening's message
+    handler calls pmt_symbol_to_string() internally and something
+    downstream re-encodes the result as UTF-8, silently turning one
+    high-value byte into two bytes (e.g. real byte 0xF7 arriving as the
+    two bytes C3 B7). A raw PDU (dict, u8vector) isn't a fix either --
+    whitening's message port rejects it outright ("wrong_type" from
     pmt_symbol_to_string, it unconditionally expects a plain symbol).
     Hex digits over the stream port are pure 7-bit ASCII, so there is no
     string/encoding step in this path at all: nothing to mangle.
 
     The block chain itself (header -> add_crc -> hamming_enc ->
-    interleaver -> gray_demap -> modulate) is unchanged and was proven
-    correct in isolation this session: captured straight from this chain,
-    the preamble is 8 identical, cleanly swept up-chirps exactly where
-    the LoRa spec says they should be, at both 1x and 8x oversampling.
+    interleaver -> gray_demap -> modulate) is unchanged: captured
+    straight from this chain, the preamble is 8 identical, cleanly swept
+    up-chirps exactly where the LoRa spec says they should be, at both
+    1x and 8x oversampling.
     """
     frame_zero_padd = int(20 * (2 ** spreading_factor) * samp_rate / bandwidth)
 

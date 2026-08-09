@@ -1,38 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# 07_resetc_rf.py -- unauthenticated RESETC (dossier section 10,
-# finding #16). Root cause: groundStationCommandAllowed() lets every APID
-# through unauthenticated by default (finding #13), and RESETC's own
-# handler (worker.cpp, APID 0x02) does nothing but blink an LED and call
-# softwareReset() -- no check of its own on top of that gate.
+# 07_resetc_rf.py -- unauthenticated RESETC.
 #
-# The simplest packet in the whole DEFCON-DEMO set (no payload at all), and
-# the first one wired end-to-end -- if this doesn't reach the FlatSat,
-# nothing else in this folder will either, so this is the pipeline sanity
-# check before building the other 6.
+# Root cause: groundStationCommandAllowed() lets every APID through
+# unauthenticated by default, and RESETC's handler (APID 0x02) only blinks
+# an LED and calls softwareReset(). The simplest packet in the set (no
+# payload at all).
 #
-# Unlike every other attack in this dossier, RESETC's handler sends NO TM
-# at all before rebooting (worker.cpp ~line 1503-1506: it's just two
-# ledBlink() calls then softwareReset()) -- there's nothing to catch over
-# RF that would prove it landed, so this script doesn't try (no RTL-SDR
-# involved, HackRF only). The only real evidence is the reboot itself.
-# --confirm-via-c3 (optional, on by default) gets that automatically by
-# polling PWNSAT-C3's own REST API for the FlatSat's uptime_s (via the
-# serial link C3 already has open -- every other script in this session
-# talks straight to the FlatSat over RF and never touches C3's API, this
-# is the one exception, purely for confirmation, not for the attack
-# itself) before and after the TX -- uptime dropping back near zero is
-# unambiguous proof of a real reboot, no manual "go check the dashboard"
-# required. Pass --confirm-via-c3=off to skip it entirely and go back to
-# pure fire-and-forget (e.g. if C3 isn't running).
+# RESETC sends no TM before rebooting, so there's nothing to catch over RF;
+# the only evidence is the reboot itself. --confirm-via-c3 (on by default)
+# polls PWNSAT-C3's REST API for the FlatSat's uptime_s before and after TX
+# -- uptime dropping back near zero proves the reboot. Pass
+# --confirm-via-c3=off for pure fire-and-forget (e.g. if C3 isn't running).
 #
-# Needs a Python with gnuradio importable -- run it and this script will
-# say so with concrete next steps if you've got the wrong one, see
-# require_gnuradio.py / PWNSAT-C3's INSTALL.md (github.com/Pwnsat/PWNSAT-C3) for why there's no single
-# right interpreter path across every machine:
+# Usage:
 #   ./07_resetc.py
-#   ./07_resetc.py --encrypt=off   # skip AES (link must be downgraded first, see 04)
+#   ./07_resetc.py --encrypt=off   # link must be downgraded first (see 04)
 #   ./07_resetc.py --gain 30 --seq 5
 
 import argparse
@@ -42,10 +26,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
 
-from pwnsat_packets import build_command_packet  # noqa: E402 -- pure packet building, no gnuradio needed
+from pwnsat_packets import build_command_packet  # noqa: E402
 
 from require_gnuradio import check as _check_gnuradio  # noqa: E402
-_check_gnuradio()  # exits with a clear message here if this Python can't import gnuradio
+_check_gnuradio()
 
 from pwnsat_lora_tx import UPLINK_FREQ_HZ, transmit_packet  # noqa: E402
 

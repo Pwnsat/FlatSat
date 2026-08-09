@@ -2,23 +2,17 @@
 # -*- coding: utf-8 -*-
 #
 # 00_gps_override_prereq_usb.py -- USB port of this attack's GPS prerequisite
-# step. commandGroundStationAccessHandler() unconditionally requires
-# groundStationGpsUsable() AND groundStationWithinRange() before EITHER
-# GS_ACCESS handshake phase runs at all (see 05_gs_auth_spoofing_rf.py's own
-# header, "PREREQUISITE -- GPS RANGE GATE") -- this script injects a fake
-# position via the DEMO-ONLY debug hook (SPP_APID_TC_GPS_OVERRIDE, 0x14,
-# requires firmware/gps-debug-demo/ flashed, NOT the real New-firmware/) so
-# that gate is satisfied before running 05_gs_auth_spoofing_usb.py.
+# step. commandGroundStationAccessHandler() requires groundStationGpsUsable()
+# AND groundStationWithinRange() before either GS_ACCESS handshake phase runs
+# (see 05_gs_auth_spoofing_rf.py's "PREREQUISITE -- GPS RANGE GATE"). This
+# injects a fake position via the DEMO-ONLY debug hook
+# (SPP_APID_TC_GPS_OVERRIDE, 0x14, requires firmware/gps-debug-demo/ flashed)
+# so that gate is satisfied before running 05_gs_auth_spoofing_usb.py.
 #
-# Same content/defaults as 00_gps_override_prereq_rf.py in this same folder
-# (itself a copy of 04_gps_override_demo_rf.py, run here as a prerequisite
-# step instead of a standalone demo) -- ported to FlatSat's real USB CDC
-# serial link instead of HackRF, same pattern as 04_gps_override_demo_usb.py.
+# Same defaults as 00_gps_override_prereq_rf.py, over USB instead of HackRF.
 #
 # Payload (13 bytes, matches commandGpsOverrideHandler() in worker.cpp):
 #   lat_e7 (int32 LE), lon_e7 (int32 LE), alt_cm (int32 LE), satellites (u8)
-#
-# NOT YET VALIDATED ON REAL HARDWARE -- see lib/flatsat_usb.py's header.
 
 import argparse
 import sys
@@ -30,13 +24,9 @@ from flatsat_usb import FlatSatUSB  # noqa: E402
 
 GPS_OVERRIDE_APID = 0x14
 
-# Area 51 main base (Groom Lake / "Watertown") -- same default as
-# 00_gps_override_prereq_rf.py / 04_gps_override_demo_*.py. NOTE: whether
-# this position actually lands inside the ground station's 35km range gate
-# depends on where New-firmware/'s own hardcoded GS coordinates are set --
-# see this attack's steps_rf.txt for how that was worked around during real
-# testing. Override with --lat/--lon/--alt if a different position is needed
-# to satisfy groundStationWithinRange() on the board being tested.
+# Area 51 (Groom Lake) -- same default as the RF prereq. Whether it lands
+# inside the ground station's 35km range gate depends on the firmware's
+# hardcoded GS coordinates; override with --lat/--lon/--alt as needed.
 DEFAULT_LAT = 37.2431
 DEFAULT_LON = -115.7930
 DEFAULT_ALT_M = 1360.0

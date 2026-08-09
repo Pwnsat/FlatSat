@@ -1,31 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# 00_recon_apid_enum_usb.py -- black-box APID enumeration over FlatSat's
-# real USB CDC serial link (USBRadioLink, 921600 baud), instead of real RF.
-# "Round 1" (USB) of this attack -- see 00_recon_apid_enum_rf.py in this
-# same folder for the original RF version.
+# 00_recon_apid_enum_usb.py -- black-box APID enumeration over the USB CDC
+# serial link (USBRadioLink, 921600 baud) instead of RF. See
+# 00_recon_apid_enum_rf.py for the RF version and full writeup.
 #
-# Root cause / vulnerability class: same as the RF version -- finding #4
-# (no rate-limiting on uplink reception) + #21 (recon APIDs
-# respond without authentication) + #22 (no TC/TM type check). The firmware
-# ALWAYS answers a structurally valid packet, even for an APID it doesn't
-# recognize (ERROR TM, 0x009) -- that gives every probe a classification,
-# not just the "hits".
-#
-# WHY THIS IS SIMPLER THAN THE RF VERSION: over USB there's no leakage to
-# filter (no uplink bleeding into a downlink receiver -- it's a direct,
-# full-duplex wired link), no TX/RX turnaround race, and no SNR to reason
-# about. The only real signal needed is which APID comes back in the
-# reply's SPP header -- that header is never encrypted (only the payload
-# is), so classification works whether or not the reply payload itself
-# decrypts cleanly.
-#
-# NOT YET VALIDATED ON REAL HARDWARE (see lib/flatsat_usb.py's own header
-# for why) -- the mechanism (framing, encryption, port probe) is the same
-# one PWNSAT-C3's own SerialTransport and usb_tc_send.py already use in
-# production, but this specific script has not been run against a real
-# FlatSat board in this session.
+# The firmware always answers a structurally valid packet, even for an
+# unrecognized APID (ERROR TM, 0x009), so every probe gets a
+# classification. Simpler than the RF version: a direct full-duplex wired
+# link means no self-leakage, no TX/RX turnaround, no SNR -- classification
+# only needs the reply's SPP-header APID, which is never encrypted.
 
 import argparse
 import sys
@@ -39,12 +23,9 @@ from pwnsat_packets import APIDS, decode_packet  # noqa: E402
 
 ERROR_TM_APID = 0x009
 
-# Same reasoning as the RF version's PROBE_PAYLOAD: 4 bytes, non-zero, so
-# BROADCAST_MSG (0x06) doesn't hit the finding #10 underflow (needs a
-# 0-byte payload specifically -- that's attack 02, not this tool) and
-# SET_BEACON_RATE (0x05) doesn't get interval=0 and flood the downlink
-# (finding #18, hit twice by hand before this fix during the RF version's
-# own development -- see that script's SAFETY NOTE).
+# 4 non-zero bytes: keeps BROADCAST_MSG (0x06) off the attack-02 underflow
+# and SET_BEACON_RATE (0x05) off a 0ms flood. See the RF version's SAFETY
+# NOTE.
 PROBE_PAYLOAD = bytes([0x01, 0x01, 0x01, 0x01])
 
 

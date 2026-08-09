@@ -1,34 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# 03_command_injection_rf.py -- unauthenticated SET_THRUSTER (dossier
-# section 04, finding #17). Root cause: groundStationCommandAllowed()
-# (worker.cpp) returns true for every APID the instant
-# mission_ctx.groundStationModeEnabled is false -- and that flag starts
-# false by default in the compiled firmware (finding #13, the same root
-# cause behind RESETC (07), fuzzing crash's neighbor findings, and most
-# of this dossier). SET_THRUSTER's own handler adds nothing on top: it
-# reads data[0] as thruster ID and data[1] as raw power (0-255, no clamp)
-# and writes it straight to the actuator.
+# 03_command_injection_rf.py -- unauthenticated SET_THRUSTER.
 #
-# Unlike 02 (memory-safety bug) this is a completely intended, working
-# command -- the vulnerability is purely "nobody checked who's allowed to
-# call it." A real actuator changes state with zero authentication.
+# Root cause: groundStationCommandAllowed() returns true for every APID
+# while groundStationModeEnabled is false (its default). SET_THRUSTER reads
+# data[0] as thruster ID and data[1] as raw power (0-255, no clamp) and
+# writes it straight to the actuator. The command works as intended -- the
+# bug is that nobody checks who is allowed to call it.
 #
-# Needs a Python with gnuradio importable -- run it and this script will
-# say so with concrete next steps if you've got the wrong one, see
-# require_gnuradio.py / PWNSAT-C3's INSTALL.md (github.com/Pwnsat/PWNSAT-C3):
-#   ./03_command_injection.py
-#   ./03_command_injection.py --thruster-id 0 --power 255   # full power, thruster 0
-#   ./03_command_injection.py --thruster-id 1 --power 200
+# Usage:
+#   ./03_command_injection.py --thruster-id 0 --power 255
 #
-# Expected result: on the FlatSat's serial console, immediately (no auth
-# prompt, no delay) --
-#   Thruster 0 changed to: 255
-# On PWNSAT-C3: the Thruster 0 gauge/sparkline jumps to the new value
-# without the operator having touched anything; the THRUSTERS health ring
-# flips to warn if power >=200 (same threshold already built into the
-# dashboard).
+# Expected: FlatSat serial console shows "Thruster 0 changed to: 255"
+# immediately (no auth); PWNSAT-C3's Thruster gauge jumps.
 
 import argparse
 import sys
@@ -36,10 +21,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
 
-from pwnsat_packets import build_command_packet  # noqa: E402 -- pure packet building, no gnuradio needed
+from pwnsat_packets import build_command_packet  # noqa: E402
 
 from require_gnuradio import check as _check_gnuradio  # noqa: E402
-_check_gnuradio()  # exits with a clear message here if this Python can't import gnuradio
+_check_gnuradio()
 
 from pwnsat_lora_tx import UPLINK_FREQ_HZ, transmit_packet  # noqa: E402
 

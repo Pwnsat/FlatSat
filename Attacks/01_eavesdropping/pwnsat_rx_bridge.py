@@ -3,39 +3,22 @@
 #
 # SPDX-License-Identifier: GPL-3.0
 #
-# pwnsat_rx_bridge.py -- DEFCON-DEMO/attacks/01_eavesdropping variant
+# pwnsat_rx_bridge.py -- 01_eavesdropping variant
 #
-# Forked from gradio/pwnsat_rx_bridge.py (copied, not moved -- see this
-# session's notes: the original stays in place so PWNSAT-C3's own live
-# radio view keeps working). Same RX flowgraph, same everything, plus one
-# addition: every eavesdropped packet gets run through the exact AES
-# decrypt PWNSAT-C3 itself uses, with the exact same hardcoded key any
-# clone of this repo already has (see try_decrypt_packet() below and
-# pwnsat_tools/pwnsat_crypto.py). That's the whole attack -- passive RX,
-# no transmission, no login, no authentication of any kind required.
+# Forked from PWNSAT-C3's own gradio/pwnsat_rx_bridge.py. Same RX flowgraph,
+# plus one addition: every eavesdropped packet is run through the exact AES
+# decrypt PWNSAT-C3 uses, with the same hardcoded key any clone of this repo
+# has (see try_decrypt_packet() and pwnsat_tools/pwnsat_crypto.py). That's
+# the whole attack -- passive RX, no transmission, no authentication.
 #
-# Author: r0r0x (original bridge); decrypt addition for DEFCON-DEMO.
+# CLI for the SDR-agnostic LoRa downlink receiver (PwnsatLoraRX). The radio
+# source is selected with a `--device-args` SoapySDR driver name, so the
+# same script drives an RTL-SDR or a HackRF (defaults to HackRF).
 #
-# Control/CLI script for the SDR-agnostic LoRa downlink receiver
-# (pwnsat_lora_rx.PwnsatLoraRX). Replaces the earlier Pluto-only bridge
-# (pyPlutoRx.py): the flowgraph's radio source is selected with a
-# `--device-args` string (a SoapySDR driver name, via GNU Radio's native
-# `gnuradio.soapy` blocks) instead of a Pluto-specific IP/URI, so the same
-# script drives either an RTL-SDR or a HackRF.
-#
-# NOTE: this must run under a Python that has `gnuradio`, `gnuradio.soapy`,
-# `gnuradio.lora_sdr`, and `zmq` importable -- NOT necessarily your shell's
-# default `python3`, and NOT the PWNSAT-C3 backend's own .venv (the backend
-# and this bridge are two separate processes on purpose, see zmq_link.py).
-# Run it and this script will tell you if you got the wrong one, with
-# concrete next steps -- see require_gnuradio.py / PWNSAT-C3's INSTALL.md (github.com/Pwnsat/PWNSAT-C3) for
-# why there's no single right answer across every machine.
-#
-# Hardware allocation for this whole DEFCON-DEMO folder: the RTL-SDR is
-# dedicated to PWNSAT-C3's own legitimate RX (gradio/pwnsat_rx_bridge.py,
-# separate from this copy) and is never used by an attack script. Every
-# attack in this folder -- this one included -- uses the HackRF, so it
-# defaults to that below instead of needing a flag every time.
+# NOTE: must run under a Python with `gnuradio`, `gnuradio.soapy`,
+# `gnuradio.lora_sdr`, and `zmq` importable -- not your shell's default
+# python3, and not the PWNSAT-C3 backend's .venv. See require_gnuradio.py /
+# PWNSAT-C3's INSTALL.md (github.com/Pwnsat/PWNSAT-C3).
 #
 # Example:
 #   ./pwnsat_rx_bridge.py
@@ -47,20 +30,13 @@ import time
 import struct
 from pathlib import Path
 
-# DEFCON-DEMO/lib/ has both require_gnuradio.py (checked next, before any
-# gnuradio-dependent import below) and pwnsat_packets.py (this attack's
-# decrypt helpers) -- one sys.path insert covers both (parents[2] from
-# this file: 01_eavesdropping -> attacks -> DEFCON-DEMO, then into lib).
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
 
 from require_gnuradio import check as _check_gnuradio  # noqa: E402
-_check_gnuradio()  # exits with a clear message here if this Python can't import gnuradio
+_check_gnuradio()
 
 import zmq  # noqa: E402
 from pwnsat_lora_rx import PwnsatLoraRX  # noqa: E402
-# hexdump/try_decrypt_packet live in lib/decrypt_display.py, shared with
-# decode_capture.py (the offline replay of a saved .bin, which needs the
-# exact same analysis but must NOT need gnuradio/a HackRF to run).
 from decrypt_display import hexdump, try_decrypt_packet  # noqa: E402
 
 DEFAULT_PORT = 5005
@@ -130,10 +106,7 @@ class Controller:
       self.f_output.flush()
 
   def file_open(self):
-    # Create the parent dir if it's missing (e.g. a relative
-    # "captures/x.bin" typed from the wrong cwd) instead of a bare
-    # FileNotFoundError -- one less way to lose 10 minutes of capture to a
-    # typo'd path.
+    # Create the parent dir if missing instead of raising FileNotFoundError.
     Path(self.args.output_file).parent.mkdir(parents=True, exist_ok=True)
     self.f_output = open(self.args.output_file, "wb")
 
@@ -158,12 +131,9 @@ class Controller:
       self.f_pcap_output.close()
 
   def setup(self):
-    # STEP 1 -- passive listen: tune the SDR to the downlink frequency with
-    # the public LoRa parameters (no reverse engineering needed, they're in
-    # this repo). device_args (and the other values below) are passed to
-    # the constructor rather than set afterwards, because device_args in
-    # particular can only take effect at osmosdr.source() construction
-    # time -- see the note on PwnsatLoraRX.__init__.
+    # STEP 1 -- passive listen: tune the SDR to the downlink frequency. Args
+    # are passed to the constructor because device_args can only take effect
+    # at source() construction time (see PwnsatLoraRX.__init__).
     print(f"[STEP 1] Tuning SDR ({self.args.device_args}) to {int(self.args.frequency) / 1e6:.3f} MHz, "
           f"BW={int(self.args.bandwidth) / 1e3:.0f} kHz, SF{self.args.spread_factor} "
           "-- same public downlink parameters any clone of this repo already has.")
@@ -184,10 +154,8 @@ class Controller:
     self.tb.start()
     print("[+] GNU Radio script started")
 
-    # STEP 2 -- demodulate: the flowgraph turns the RF signal into raw SPP
-    # packets and publishes them over ZMQ; this process subscribes to that
-    # same feed to receive and display them. No transmission happens here,
-    # no login, no interaction with PWNSAT-C3 at all.
+    # STEP 2 -- demodulate: the flowgraph publishes raw SPP packets over ZMQ;
+    # this process subscribes to that feed. Passive RX only, no transmission.
     print(f"[STEP 2] Subscribing to demodulated packets on {self.args.address} ...")
     self.ctx = zmq.Context()
     self.sock = self.ctx.socket(zmq.SUB)

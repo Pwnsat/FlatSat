@@ -1,35 +1,25 @@
 #!/usr/bin/env python3
-# HackRF RX capture + offline LoRa decode -- built for the APID
-# enumeration tool (attacks/00_recon_apid_enum), reusable by any future
-# tool that needs to listen for a response on the SAME HackRF it also
-# transmits with (e.g. attack 05's RX half). Mirror image of
-# pwnsat_lora_tx.py: that one renders baseband and shells out to
-# hackrf_transfer -t for TX; this one shells out to hackrf_transfer -r
-# for RX, then decodes the capture entirely offline.
+# HackRF RX capture + offline LoRa decode -- built for the APID enumeration
+# tool (attacks/00_recon_apid_enum), reusable by any tool that listens for a
+# response on the SAME HackRF it also transmits with (e.g. attack 05's RX
+# half). Mirror image of pwnsat_lora_tx.py: that shells out to
+# hackrf_transfer -t; this shells out to hackrf_transfer -r, then decodes
+# the capture offline.
 #
-# Why hackrf_transfer -r instead of a live GNU Radio soapy.source (what
-# pwnsat_lora_rx.py, the long-running C3 bridge, uses): this tool does
-# single-shot, fixed-duration captures on the SAME physical HackRF an
-# attack script also uses for TX moments earlier -- a CLI subprocess
-# with a hard sample count (-n) is simpler and more predictable to bound
-# in time than juggling a live GNU Radio source's start/stop timing on
-# every call. Same reasoning as pwnsat_lora_tx.py's own TX design.
+# Why hackrf_transfer -r instead of a live GNU Radio soapy.source: this does
+# single-shot, fixed-duration captures on the SAME HackRF an attack script
+# used for TX moments earlier -- a CLI subprocess with a hard sample count
+# (-n) is simpler to bound in time than a live source's start/stop timing.
 #
-# Decode reuses gr-lora_sdr's own lora_sdr_lora_rx block -- the exact
-# same one pwnsat_lora_rx.py uses for the live C3 downlink -- fed from
-# the captured file instead of a live SDR, with the same channelization
-# (freq_xlating_fir_filter decimating from the HackRF's capture rate down
-# to the LoRa channel rate) pwnsat_lora_rx.py uses to go from HackRF/
-# RTL-SDR's real sample rate to the 250 kHz gr-lora_sdr's demod expects.
+# Decode reuses gr-lora_sdr's lora_sdr_lora_rx block -- the same one
+# pwnsat_lora_rx.py uses -- fed from the file instead of a live SDR, with the
+# same freq_xlating_fir_filter channelization down to the 250 kHz the demod
+# expects.
 #
-# Frame boundaries: lora_sdr_lora_rx's output is published one ZMQ
-# message per decoded frame when connected to a zeromq.pub_sink (this is
-# the exact mechanism the whole eavesdropping tool already depends on
-# working correctly) -- a raw vector_sink_b would just concatenate every
-# frame's bytes with no way to tell them apart. This module opens a
-# local-loopback ZMQ PUB/SUB pair (bound to 127.0.0.1 on a free port,
-# nothing external) purely to reuse that same frame-boundary mechanism
-# offline, in-process.
+# Frame boundaries: lora_sdr_lora_rx publishes one ZMQ message per decoded
+# frame through a zeromq.pub_sink (a raw vector_sink_b would concatenate
+# frames with no way to split them). This opens a local-loopback ZMQ PUB/SUB
+# pair (127.0.0.1, free port) purely to reuse that mechanism offline.
 
 import os
 import shutil

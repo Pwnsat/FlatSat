@@ -3,18 +3,13 @@
 #
 # decode_capture.py -- offline replay of a saved eavesdropping capture.
 #
-# pwnsat_rx_bridge.py (--output-file) saves every eavesdropped packet as a
-# raw record: [8-byte timestamp_ns][2-byte length][that many raw SPP
-# bytes] -- deliberately UNDECRYPTED on disk, so the same file can also
-# feed the replay attack (06), which needs the exact original bytes, not
-# whatever we made of them.
+# pwnsat_rx_bridge.py (--output-file) saves each packet as a raw record:
+# [8-byte timestamp_ns][2-byte length][raw SPP bytes], undecrypted on disk
+# so the same file can also feed the replay attack (06).
 #
-# This script reads that file back and runs the same header-parse / ECB
-# check / decrypt analysis pwnsat_rx_bridge.py prints live, so a capture
-# can be reviewed or shown later without a HackRF connected and without
-# gnuradio installed at all -- this file only imports lib/decrypt_display.py
-# and its dependency lib/pwnsat_packets.py, neither of which touch radio
-# hardware or gnuradio.
+# This reads that file back and runs the same header-parse / ECB-check /
+# decrypt analysis pwnsat_rx_bridge.py prints live -- no HackRF, no gnuradio
+# (only imports lib/decrypt_display.py and lib/pwnsat_packets.py).
 #
 # Example:
 #   ./decode_capture.py eavesdrop_run1.bin

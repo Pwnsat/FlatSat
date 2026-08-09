@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 # Shared display/decrypt helpers for the eavesdropping attack -- used both
-# live (attacks/01_eavesdropping/pwnsat_rx_bridge.py, while a packet is
-# still fresh off the SDR) and offline (attacks/01_eavesdropping/
-# decode_capture.py, replaying a saved .bin capture with no radio hardware
-# involved at all). Deliberately has NO gnuradio import anywhere in this
-# file or its dependencies (pwnsat_packets.py is gnuradio-free) -- that's
-# what lets decode_capture.py analyze a capture without needing a Python
-# build with GNU Radio, or a HackRF plugged in.
+# live (pwnsat_rx_bridge.py) and offline (decode_capture.py, replaying a
+# saved .bin with no radio hardware). Deliberately has NO gnuradio import
+# anywhere in this file or its dependencies, so decode_capture.py can analyze
+# a capture without a GNU Radio Python or a HackRF.
 import string
 import sys
 from pathlib import Path

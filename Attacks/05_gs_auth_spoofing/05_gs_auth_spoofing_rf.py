@@ -11,53 +11,26 @@
 #     return challenge ^ gs_shared_auth_key;
 #   }
 #
-# This key is not a secret in any meaningful sense: it's the exact same
-# literal `0xC0DEFACE` this repo's own ground-station tooling ships as a
-# hardcoded default (pwnsat_tools/usb_tc_send.py's DEFAULT_ARGS
-# ["auth_key"] and compute_gs_response()). Anyone with the firmware
-# binary (which this key is compiled directly into, in cleartext -- no
-# obfuscation) or this codebase already has it. And even without either:
-# the FlatSat sends its own challenge back in CLEARTEXT (well,
-# AES-encrypted with the ALSO-static, ALSO-known key from attack 01 --
-# New-firmware doesn't add any second layer of protection here) inside
-# the GS_ACCESS TM's own payload, bytes 5-8. A single eavesdropped
-# handshake (attack 01) would let an attacker recover the key directly
-# via challenge XOR response, with zero prior knowledge of this
-# firmware's source.
+# The key isn't a secret: it's the same literal this repo's own GS tooling
+# ships as a default (usb_tc_send.py's compute_gs_response()) and it's
+# compiled into the firmware in cleartext. Even without either, the FlatSat
+# returns its challenge in the GS_ACCESS TM payload (bytes 5-8, AES'd only
+# with the static key from attack 01), so one eavesdropped handshake
+# (attack 01) recovers the key via challenge XOR response.
 #
-# How this script does it (the "already know the key" path -- the more
-# direct of the two, since we DO have the source):
-#   1. Send GS_ACCESS phase 0x00 (payload: 0x00) -- asks the FlatSat to
-#      issue a fresh challenge.
-#   2. Listen for the GS_ACCESS TM reply, decrypt it, read the 32-bit
-#      challenge back out of its own payload (offset 5, little-endian --
-#      see telemetrySPPTransmitGroundAccessStatus()).
-#   3. Compute response = challenge XOR 0xC0DEFACE.
-#   4. Send GS_ACCESS phase 0x01 (payload: 0x01 + response, big-endian --
-#      see commandGroundStationAccessHandler()'s own parsing) with that
-#      response.
-#   5. Listen again -- auth_state 0x01 in the reply means the session is
-#      now active (mission_ctx.groundStationSessionActive = true, valid
-#      for gs_session_window_ms = 5 minutes), granting whatever
-#      GS-gated behavior groundStationCommandAllowed()/
-#      groundStationGateOpen() unlock, without ever touching a real
-#      credential.
+# Steps (the "already know the key" path):
+#   1. Send GS_ACCESS phase 0x00 -- ask for a fresh challenge.
+#   2. Read the 32-bit challenge from the decrypted TM reply (offset 5, LE).
+#   3. response = challenge XOR 0xC0DEFACE.
+#   4. Send GS_ACCESS phase 0x01 with that response.
+#   5. auth_state 0x01 in the reply => session active (valid 5 min),
+#      unlocking GS-gated behavior with no real credential.
 #
 # PREREQUISITE -- GPS RANGE GATE: commandGroundStationAccessHandler()
-# unconditionally requires groundStationGpsUsable() (a real fix) AND
-# groundStationWithinRange() (within gs_station_radius_m, 35km, of the
-# ground station's own hardcoded coordinates) for EITHER phase, before
-# any key/response logic runs at all -- confirmed by reading the
-# handler's own early-return checks. If the FlatSat's real GPS position
-# isn't within that radius, this will fail with "GS RANGE LOCK"
-# regardless of how correct the forged response is. See this attack's
-# steps.txt for how this was worked around during testing (this
-# session's FlatSat is physically nowhere near the ground station's
-# real coordinates).
-#
-# Needs a Python with gnuradio importable -- run it and this script will
-# say so with concrete next steps if you've got the wrong one, see
-# require_gnuradio.py / PWNSAT-C3's INSTALL.md (github.com/Pwnsat/PWNSAT-C3).
+# requires groundStationGpsUsable() AND groundStationWithinRange() (within
+# 35km of the ground station's hardcoded coordinates) for either phase,
+# before any key logic runs. Out of range fails with "GS RANGE LOCK". See
+# steps.txt for the test workaround.
 
 import argparse
 import sys
@@ -71,7 +44,7 @@ sys.stdout.reconfigure(line_buffering=True)
 from pwnsat_packets import build_command_packet, decode_packet, decrypt_payload  # noqa: E402
 
 from require_gnuradio import check as _check_gnuradio  # noqa: E402
-_check_gnuradio()  # exits with a clear message here if this Python can't import gnuradio
+_check_gnuradio()
 
 from pwnsat_lora_tx import UPLINK_FREQ_HZ, transmit_packet  # noqa: E402
 from pwnsat_catsniffer_rx import CatSnifferRX  # noqa: E402
@@ -226,12 +199,8 @@ def main() -> None:
         elif explicit_rejection:
             print("[!] FlatSat explicitly rejected the forged response -- see auth_state above.")
         else:
-            # We transmitted every retry; the FlatSat may well have accepted the
-            # forgery -- this loop only ever caught its OWN RX packet loss, not a
-            # firmware-side rejection (see this attack's steps_rf.txt, "the script
-            # can fail to confirm even when the attack DID work": happened at
-            # least once before, confirmed accepted via GS_STATUS over the serial
-            # link when this exact RX-side confirmation was missed).
+            # No reply captured doesn't mean rejected -- the RX can miss it
+            # even when the FlatSat accepted. Confirm via GS_STATUS instead.
             print("[?] No confirmation captured over RF -- inconclusive, NOT necessarily a failure.")
             print("    This script's own RX can miss the reply even when the FlatSat accepted it.")
             print("    Check GS_STATUS on another channel (PWNSAT-C3's serial link, e.g. the")

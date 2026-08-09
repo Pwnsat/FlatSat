@@ -4,27 +4,17 @@
 # RTL-SDR as a dedicated, always-on LoRa downlink listener -- fallback for
 # 00_recon_apid_enum when a CatSniffer isn't available.
 #
-# Why this exists: pwnsat_catsniffer_rx.py was built first (see its own
-# module docstring for the full TX/RX-turnaround diagnosis), but both
-# CatSniffers on hand this session turned out to be hardware-faulty
-# (confirmed: stopped enumerating on USB entirely, `ioreg` couldn't see
-# them even after multiple cable/port swaps -- not a software problem).
-# The RTL-SDR normally dedicated to PWNSAT-C3's own legitimate downlink
-# view (see project_defcon_demo_hardware memory) is the only other
-# receive-capable radio on hand, so for this session C3 is stopped and
-# its RTL-SDR is borrowed for 00's RX instead. Same reasoning as the
-# CatSniffer: a second, dedicated radio removes the single-HackRF TX/RX
-# turnaround race entirely, since it never has to switch modes.
+# Why this exists: pwnsat_catsniffer_rx.py was built first (see its docstring
+# for the TX/RX-turnaround diagnosis), but a CatSniffer isn't always on hand.
+# PWNSAT-C3's own RTL-SDR is the other receive-capable radio usually
+# available, so this borrows it for 00's RX (stop C3 first, they can't share
+# it). A second dedicated radio removes the single-HackRF TX/RX turnaround
+# race, since it never switches modes.
 #
-# Reuses PwnsatLoraRX (the exact same live GNU Radio + SoapySDR flowgraph
-# DEFCON-DEMO/attacks/01_eavesdropping/pwnsat_lora_rx.py and the original
-# C3 bridge already use for RTL-SDR downlink reception) instead of
-# duplicating the SoapySDR/gain-stage handling -- imported directly, not
-# copied, so there's one place that knows how to open this hardware.
-# Runs it continuously, publishing to a LOCAL loopback ZMQ address (not
-# C3's own 5005/5006), with a SUB socket in this same process to recover
-# decoded frames -- same frame-boundary mechanism the eavesdropping tool
-# and pwnsat_lora_rx_capture.py already rely on.
+# Reuses PwnsatLoraRX (the same flowgraph 01_eavesdropping/pwnsat_lora_rx.py
+# uses) instead of duplicating the SoapySDR/gain handling. Runs it
+# continuously, publishing to a local loopback ZMQ address, with a SUB socket
+# in this process to recover decoded frames.
 
 from __future__ import annotations
 

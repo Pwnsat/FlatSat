@@ -6,26 +6,19 @@
 # real USB CDC serial link instead of RF. See 04_gps_override_demo_rf.py in
 # this same folder for the full context.
 #
-# THIS IS NOT THE REAL RF GPS SPOOFING ATTACK, and unlike every other
-# attack in this dossier, it has NO real-attack RF counterpart to speak
-# of either way: 04_gps_spoofing_rf.py (the actual GPS L1 signal spoof,
-# overpowering the FlatSat's real u-blox NEO-6M) has no USB equivalent at
-# all -- it doesn't send a command to the flight computer, it attacks a
-# separate physical GPS receiver by out-shouting the real satellite
-# signal over the air. There is nothing to "do over USB" for that attack.
+# THIS IS NOT THE REAL RF GPS SPOOFING ATTACK. The real one
+# (04_gps_spoofing_rf.py, an over-the-air GPS L1 spoof of the u-blox NEO-6M)
+# has no USB equivalent -- it attacks a separate physical GPS receiver, not
+# the flight computer.
 #
-# This script is the USB port of the DEBUG-ONLY demo instead
-# (SPP_APID_TC_GPS_OVERRIDE, 0x14) -- a command that only exists in a
-# separate firmware build (firmware/gps-debug-demo/, NOT the real
-# New-firmware/), added specifically to demonstrate what a successful GPS
-# spoof would look like on the PWNSAT-C3 dashboard once the position is
-# trusted with no plausibility check. Requires that debug build flashed to
-# the FlatSat -- this command does not exist in the real firmware.
+# This is the USB port of the DEBUG-ONLY demo (SPP_APID_TC_GPS_OVERRIDE,
+# 0x14) -- a command that only exists in a separate firmware build
+# (firmware/gps-debug-demo/, NOT the real firmware), added to show what a
+# successful spoof looks like on the PWNSAT-C3 dashboard once the position is
+# trusted with no plausibility check. Requires that debug build flashed.
 #
 # Payload (13 bytes, matches commandGpsOverrideHandler() in worker.cpp):
 #   lat_e7 (int32 LE), lon_e7 (int32 LE), alt_cm (int32 LE), satellites (u8)
-#
-# NOT YET VALIDATED ON REAL HARDWARE -- see lib/flatsat_usb.py's header.
 
 import argparse
 import sys
@@ -37,8 +30,7 @@ from flatsat_usb import FlatSatUSB  # noqa: E402
 
 GPS_OVERRIDE_APID = 0x14
 
-# Area 51 main base (Groom Lake / "Watertown") -- same target as the RF
-# demo and the real (blocked) spoofing attempt.
+# Area 51 (Groom Lake) -- same target as the RF demo and the real spoof.
 DEFAULT_LAT = 37.2431
 DEFAULT_LON = -115.7930
 DEFAULT_ALT_M = 1360.0

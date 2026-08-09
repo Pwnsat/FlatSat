@@ -3,20 +3,13 @@
 #
 # pwnsat_packets.py
 #
-# Thin bootstrap that puts PWNSAT-C3's pwnsat_tools/ on
-# sys.path and re-exports the packet-building functions attack scripts
-# need, instead of duplicating any SPP/CCSDS or AES-ECB logic here. Same
-# reasoning as command_registry.py's own docstring: this repo already has
-# one place that knows how to build a byte-exact telecommand for every
-# APID (usb_tc_send.py's build_wire_payload/build_logical_payload +
-# spp_tools.py's build_tc) -- reuse it, don't re-derive per-APID byte
-# layouts a second time here.
+# Thin bootstrap that puts PWNSAT-C3's pwnsat_tools/ on sys.path and
+# re-exports the packet-building functions attack scripts need, instead of
+# duplicating any SPP/CCSDS or AES-ECB logic here (usb_tc_send.py's
+# build_wire_payload/build_logical_payload + spp_tools.py's build_tc).
 #
-# Deliberately does NOT import backend/command_registry.py: that module is
-# tied to the FastAPI app's `settings` (session secrets, login defaults,
-# etc.) that have nothing to do with a standalone RF attack script. This
-# goes one layer lower, straight to pwnsat_tools, which has no such
-# dependency.
+# Deliberately does NOT import backend/command_registry.py, which is tied to
+# the FastAPI app's `settings`; this goes straight to pwnsat_tools instead.
 
 import sys
 from argparse import Namespace

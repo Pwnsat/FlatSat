@@ -1,25 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# 07_resetc_usb.py -- RESETC with no authentication, delivered over
-# FlatSat's real USB CDC serial link instead of RF. "Round 1" (USB) -- see
-# 07_resetc_rf.py in this same folder for the original RF version, which
-# has the full root-cause writeup (groundStationCommandAllowed() permissive
-# by default, RESETC's own handler just blinks an LED and calls
-# softwareReset()).
+# 07_resetc_usb.py -- unauthenticated RESETC over the USB CDC serial link
+# instead of RF. See 07_resetc_rf.py for the full root-cause writeup
+# (groundStationCommandAllowed() permissive by default, RESETC's handler
+# just blinks an LED and calls softwareReset()).
 #
-# RESETC sends NO TM of its own before rebooting -- there's nothing to read
-# back, over USB or RF. Worse for THIS script specifically: the packet is
-# delivered over the exact same USB connection that immediately drops when
-# the board reboots (unlike the RF version, whose HackRF TX is a completely
-# separate physical channel from the FlatSat's own USB port). So this
-# script's own connection can't be reused for confirmation even in
-# principle -- same as the RF version, the only reliable confirmation is
-# polling PWNSAT-C3's REST API (which has its OWN, separate connection to
-# the board and reconnects on its own -- see app.py's _connect_with_retry
-# watchdog) for uptime_s before/after.
-#
-# NOT YET VALIDATED ON REAL HARDWARE -- see lib/flatsat_usb.py's header.
+# RESETC sends no TM before rebooting, and this script's own USB connection
+# drops the moment the board reboots, so it can't confirm on its own. As
+# with the RF version, the only reliable confirmation is polling PWNSAT-C3's
+# REST API (its own connection, which reconnects) for uptime_s before/after.
 
 import argparse
 import sys
@@ -30,21 +20,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
 
 from flatsat_usb import FlatSatUSB  # noqa: E402
 
-# NOTE: the RF version of this script (07_resetc_rf.py) hardcodes
-# C3_BASE_URL = "http://127.0.0.1:8000" -- stale relative to this whole
-# project's actual, currently-used PWNSAT-C3 port (8791, confirmed
-# throughout this session's dual-platform work). Using the real port here.
+# PWNSAT-C3's actual port is 8791 (the RF version hardcodes a stale 8000).
 C3_BASE_URL = "http://127.0.0.1:8791"
 C3_LOGIN = {"username": "pwnsat", "password": "pwnsat"}
 
 
 def read_uptime_via_c3(timeout_s: float = 4.0):
-    """Best-effort: logs into PWNSAT-C3's REST API, sends a 'status'
-    command over ITS OWN (separate) connection to the FlatSat, and pulls
-    uptime_s back out of the STATUS TM over the websocket. Returns None on
-    any failure -- this is a convenience, never required for the attack
-    itself. Same approach as 07_resetc_rf.py's own helper, copied here
-    rather than imported (keeps this script standalone)."""
+    """Best-effort: logs into PWNSAT-C3's REST API, sends a 'status' command
+    over its own connection to the FlatSat, and reads uptime_s back from the
+    STATUS TM over the websocket. Returns None on any failure -- a
+    convenience, never required for the attack itself."""
     try:
         import asyncio
         import json

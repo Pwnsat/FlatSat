@@ -6,26 +6,18 @@
 # firmware/gps-debug-demo/, sent over the same HackRF uplink every other
 # attack in this dossier uses. Defaults to Area 51 (37.2431N, -115.7930W).
 #
-# THIS IS NOT THE REAL RF GPS SPOOFING ATTACK. Real RF spoofing against
-# the FlatSat's actual u-blox NEO-6M was attempted extensively (single
-# fixed position at 6 gain levels, sustained low gain, a smooth aligned
-# hand-over, amp on/off, an 11-value ppm sweep) and confirmed blocked by
-# a real, verified hardware limitation: `hackrf_debug --si5351c -n 0 -r`
-# on this HackRF returned `[0] -> 0x51`, confirming no TCXO reference is
-# active -- GPS L1 needs frequency precision this stock HackRF can't
-# provide. See steps.txt for the full writeup and evidence.
+# THIS IS NOT THE REAL RF GPS SPOOFING ATTACK. Real RF spoofing against the
+# FlatSat's u-blox NEO-6M was attempted extensively and confirmed blocked by
+# a hardware limitation: this HackRF has no active TCXO reference
+# (`hackrf_debug --si5351c -n 0 -r` returns `[0] -> 0x51`), and GPS L1 needs
+# frequency precision a stock HackRF can't provide. See steps.txt.
 #
-# This script instead demonstrates what a SUCCESSFUL spoof would look
-# like on the PWNSAT-C3 dashboard, using a debug command WE added to a
-# separate firmware build (firmware/gps-debug-demo/, compiled from a full
-# copy of New-firmware/ -- the real firmware is untouched, see that
-# folder's own platformio.ini comment). Requires that build flashed to
-# the FlatSat instead of the real firmware -- it will NOT work against
-# New-firmware/ as compiled today, since that command doesn't exist
-# there. Be explicit about this distinction if demoing live: this proves
-# "GPS telemetry is trusted with no integrity/plausibility check," not
-# "the GPS radio link itself was spoofed" (that's the real attack, and
-# it's the one that's still blocked by the missing TCXO).
+# This instead shows what a SUCCESSFUL spoof looks like on the PWNSAT-C3
+# dashboard, using a debug command in a separate firmware build
+# (firmware/gps-debug-demo/, the real firmware untouched). Requires that
+# build flashed; it does NOT work against the real firmware. It proves "GPS
+# telemetry is trusted with no plausibility check," not "the GPS radio link
+# was spoofed" (that's the real attack, still blocked by the missing TCXO).
 #
 # Payload (13 bytes, matches commandGpsOverrideHandler() in worker.cpp):
 #   lat_e7 (int32 LE), lon_e7 (int32 LE), alt_cm (int32 LE), satellites (u8)
@@ -40,14 +32,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
 from pwnsat_packets import build_tc, encrypt_payload  # noqa: E402
 
 from require_gnuradio import check as _check_gnuradio  # noqa: E402
-_check_gnuradio()  # exits with a clear message here if this Python can't import gnuradio
+_check_gnuradio()
 
 from pwnsat_lora_tx import UPLINK_FREQ_HZ, transmit_packet  # noqa: E402
 
 GPS_OVERRIDE_APID = 0x14
 
-# Area 51 main base (Groom Lake / "Watertown") -- same target as the
-# real spoofing attempt in 04_gps_spoofing.py/spoof_ramp.sh.
+# Area 51 (Groom Lake) -- same target as 04_gps_spoofing.py.
 DEFAULT_LAT = 37.2431
 DEFAULT_LON = -115.7930
 DEFAULT_ALT_M = 1360.0

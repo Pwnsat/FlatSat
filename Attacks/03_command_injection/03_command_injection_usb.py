@@ -1,21 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# 03_command_injection_usb.py -- SET_THRUSTER with no authentication,
-# delivered over FlatSat's real USB CDC serial link instead of RF. "Round 1"
-# (USB) -- see 03_command_injection_rf.py in this same folder for the
-# original RF version, which has the full root-cause writeup
-# (groundStationCommandAllowed() defaulting to permissive, no auth gate on
-# the actuator command itself).
+# 03_command_injection_usb.py -- unauthenticated SET_THRUSTER over the USB
+# CDC serial link instead of RF. See 03_command_injection_rf.py for the full
+# root-cause writeup (groundStationCommandAllowed() permissive by default).
 #
-# Same as the RF version: SET_THRUSTER never transmits a downlink TM even
-# on success (confirmed via 00_recon_apid_enum's own sweep -- 0x004 falls
-# into the "no matching response" bucket every time), so this script can't
-# confirm the injection landed by listening for a reply, over USB or RF --
-# the only ground truth is the FlatSat's own serial console line
-# ("Thruster N changed to: P") or watching PWNSAT-C3's Thruster gauge jump.
-#
-# NOT YET VALIDATED ON REAL HARDWARE -- see lib/flatsat_usb.py's header.
+# SET_THRUSTER transmits no downlink TM even on success, so this can't
+# confirm the injection by listening -- confirm via the FlatSat's serial
+# console ("Thruster N changed to: P") or PWNSAT-C3's Thruster gauge.
 
 import argparse
 import sys

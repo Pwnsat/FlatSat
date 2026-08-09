@@ -10,28 +10,18 @@
 # Description: SDR-agnostic LoRa downlink receiver (RTL-SDR or HackRF via GNU Radio's native Soapy blocks)
 # GNU Radio version: 3.10.12.0
 #
-# Uses GNU Radio's in-tree `gnuradio.soapy` module (backed by SoapySDR) as the
-# radio source instead of gr-osmosdr. gr-osmosdr is a separate out-of-tree
-# module that would need to be built from source on top of everything else;
-# GNU Radio 3.10 already ships Soapy support, and SoapySDR + soapyrtlsdr are
-# installable straight from Homebrew, so this avoids one extra from-source
-# build entirely. Everything downstream (the band-pass filter, the
-# gr-lora_sdr demodulator, the ZMQ publish sink) is unchanged and
-# SDR-agnostic already.
+# Uses GNU Radio's in-tree `gnuradio.soapy` (SoapySDR-backed) as the radio
+# source instead of the out-of-tree gr-osmosdr. Everything downstream
+# (band-pass filter, gr-lora_sdr demodulator, ZMQ sink) is SDR-agnostic.
 #
 # Device selection:
 #   RTL-SDR (recommended dedicated receiver): device_args = "rtlsdr"
 #   HackRF (if used for RX instead of TX):     device_args = "hackrf"
 #
-# Sample rate note: RTL-SDR can sample as slowly as the LoRa channel itself
-# (250 kHz), so historically this flowgraph ran the source and the LoRa
-# demodulator at the same rate (decim=1). HackRF's ADC has a hard minimum of
-# 1 MSps -- it physically cannot sample at 250 kHz. To support both, the
-# source now runs at its own `source_samp_rate` (defaults to 2 MSps for
-# HackRF, or the channel bandwidth itself for anything else, e.g. RTL-SDR --
-# identical behavior to before for RTL-SDR), and the frequency-translating
-# FIR filter channelizes AND decimates down to the 250 kHz the LoRa
-# demodulator expects, in one step.
+# Sample rate: RTL-SDR can sample at the LoRa channel rate (250 kHz), but
+# HackRF's ADC floor is 1 MSps. So the source runs at source_samp_rate
+# (2 MSps for HackRF, else the channel bandwidth) and the freq-translating
+# FIR filter channelizes AND decimates to 250 kHz in one step.
 
 from gnuradio import filter
 from gnuradio.filter import firdes
@@ -53,15 +43,9 @@ DEFAULT_HACKRF_SOURCE_SAMP_RATE = 2000000
 
 class PwnsatLoraRX(gr.top_block):
 
-    # NOTE ON device_args: this selects which physical device Soapy opens
-    # ("rtlsdr", "hackrf", ...) and is only read once, at `soapy.source()`
-    # construction time -- it cannot be changed on an already-running
-    # flowgraph the way frequency/bandwidth/gain can. That is why
-    # `device_args` (and the other values that matter at construction time)
-    # are accepted here as constructor arguments instead of only being
-    # exposed as post-construction setters: a `set_device_args()` call after
-    # `__init__` would silently do nothing to the already-opened hardware.
-    # `pwnsat_rx_bridge.py` always passes these in through the constructor.
+    # device_args selects the physical device and is only read at
+    # soapy.source() construction time -- a set_device_args() call afterwards
+    # does nothing, so it's a constructor argument.
     def __init__(self, device_args="rtlsdr", frequency=916000000, bandwidth=250000,
                  zmq_address="tcp://0.0.0.0:5005", spread_factor=7,
                  rf_gain=30, if_gain=20, bb_gain=20, source_samp_rate=None):
@@ -84,11 +68,8 @@ class PwnsatLoraRX(gr.top_block):
         self.has_crc = has_crc = False
         self.frequency = frequency = frequency
         self.coding_rate = coding_rate = 1
-        # Overall/IF/baseband gain -- generic defaults Soapy maps onto
-        # whatever gain stages the selected device actually exposes (RTL-SDR
-        # has one tuner gain; HackRF splits this into LNA/VGA/AMP stages --
-        # if_gain maps to HackRF's LNA, bb_gain to its VGA, see set_if_gain/
-        # set_bb_gain below).
+        # Generic gain defaults Soapy maps onto the device's stages (RTL-SDR
+        # has one tuner gain; HackRF splits into LNA/VGA/AMP).
         self.rf_gain = rf_gain = rf_gain
         self.if_gain = if_gain = if_gain
         self.bb_gain = bb_gain = bb_gain
@@ -98,11 +79,8 @@ class PwnsatLoraRX(gr.top_block):
                 DEFAULT_HACKRF_SOURCE_SAMP_RATE if "hackrf" in device_args else bandwidth
             )
         self.source_samp_rate = source_samp_rate = source_samp_rate
-        # Must be an integer decimation for freq_xlating_fir_filter_ccc; a
-        # non-integer ratio here means source_samp_rate was chosen poorly
-        # relative to bandwidth (both are under our control via config, so
-        # this should never happen in practice, but fail loudly if it does
-        # rather than silently mis-channelizing).
+        # Must be an integer decimation for freq_xlating_fir_filter_ccc --
+        # fail loudly rather than silently mis-channelize.
         if source_samp_rate % samp_rate != 0:
             raise ValueError(
                 f"source_samp_rate ({source_samp_rate}) must be an integer "
@@ -122,20 +100,14 @@ class PwnsatLoraRX(gr.top_block):
         self.zeromq_pub_sink_0 = zeromq.pub_sink(gr.sizeof_char, 1, zmq_address, 100, False, 1000, '', True, True)
         self.lora_rx_0 = lora_sdr.lora_sdr_lora_rx( bw=bandwidth, cr=1, has_crc=True, impl_head=False, pay_len=255, samp_rate=samp_rate, sf=spread_factor, sync_word=[0x12], soft_decoding=True, ldro_mode=2, print_rx=[True,True])
 
-        # "driver=<name>" is SoapySDR's canonical device-args key-value
-        # syntax (matches what GNU Radio Companion itself generates for its
-        # native soapy_custom_source block) -- more robust across backends
-        # than relying on a bare driver name being accepted as shorthand.
+        # "driver=<name>" is SoapySDR's canonical device-args syntax.
         self.soapy_source_0 = soapy.source("driver=" + device_args, "fc32", 1, "", "", [""], [""])
         self.soapy_source_0.set_sample_rate(0, source_samp_rate)
         self.soapy_source_0.set_frequency(0, frequency)
         self.soapy_source_0.set_gain_mode(0, False)
         self.soapy_source_0.set_gain(0, rf_gain)
-        # Analog baseband filter bandwidth: many SDRs (HackRF included, whose
-        # filter only has fixed steps from 1.75 MHz up) can't be set anywhere
-        # near a 250 kHz LoRa channel directly -- the real channel selection
-        # happens digitally via the freq_xlating_fir_filter below regardless,
-        # so this is best-effort only and never fatal if rejected/clamped.
+        # Analog baseband filter: best-effort only (many SDRs can't get near
+        # 250 kHz); real channel selection is digital, via the FIR filter.
         self._try_soapy_call(lambda: self.soapy_source_0.set_bandwidth(0, bandwidth))
         # These are optional/device-dependent capabilities in SoapySDR --
         # not every driver exposes them (e.g. SoapyRTLSDR has no automatic

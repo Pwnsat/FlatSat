@@ -1,29 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# 06_replay_usb.py -- no anti-replay protection (dossier finding #5),
-# delivered over FlatSat's real USB CDC serial link instead of RF. "Round 1"
-# (USB) -- see 06_replay_rf.py in this same folder for the original RF
-# version, which has the full root-cause writeup (commandHandlerInternal()
-# parses sequence_count but never compares it against anything).
+# 06_replay_usb.py -- no anti-replay protection, over the USB CDC serial
+# link instead of RF. See 06_replay_rf.py for the full root-cause writeup
+# (commandHandlerInternal() parses sequence_count but never compares it).
 #
-# Same reasoning for using STATUS (APID 0x0C) instead of PING: PING TM also
-# gets emitted periodically on its own by the serial console's dashboard
-# rotation, which would make "did my replayed command get a real reply, or
-# did I just catch a routine periodic ping" ambiguous. STATUS is
-# command-response only (confirmed via PWNSAT-C3's own frontend comments),
-# so any STATUS TM this script reads back is unambiguously a reply to the
-# packet it just sent -- over USB this matters less than over RF (no
-# leakage/background-beacon confusion to begin with), but keeping the same
-# command as the RF version makes the two dossiers directly comparable.
+# Uses STATUS (APID 0x0C) instead of PING for the same reason as the RF
+# version: PING TMs are emitted periodically on their own, so a replayed
+# PING would be ambiguous; STATUS is command-response only.
 #
-# Builds ONE STATUS packet and transmits those EXACT SAME bytes twice --
-# nothing is rebuilt or re-encrypted in between. The firmware's outgoing TM
-# sequence_count and embedded uptime_s both advancing between the two
-# replies is proof of two genuinely separate executions, not one cached
-# response.
-#
-# NOT YET VALIDATED ON REAL HARDWARE -- see lib/flatsat_usb.py's header.
+# Builds ONE STATUS packet and transmits those EXACT SAME bytes twice. The
+# outgoing TM sequence_count and uptime_s both advancing between the two
+# replies proves two separate executions, not one cached response.
 
 import argparse
 import sys

@@ -4,28 +4,19 @@
 # CatSniffer v2 (Electronic Cats, SX1262 onboard) as a dedicated, always-on
 # LoRa downlink listener.
 #
-# Why this exists: confirmed empirically (2026-07-17) that a single
-# HackRF cannot reliably catch the
-# FlatSat's downlink reply -- it answers in ~11ms (measured on the
-# firmware's own debug console: the "[TC - SPP]" and "[TM - SPP]" debug
-# lines land 11ms apart), faster than a single half-duplex SDR can close
-# out an uplink `hackrf_transfer -t` and reopen a fresh `hackrf_transfer
-# -r` (100ms+ of USB/device-reinit overhead every time, confirmed with 4
-# straight misses even with retries -- the gap is a deterministic
-# hardware limit, not RF noise). A second, dedicated radio removes the
-# race entirely: this module keeps the CatSniffer in RX continuously
-# while HackRF (pwnsat_lora_tx.py) stays TX-only -- there is no window to
-# miss, because the CatSniffer never has to stop listening at all.
+# Why this exists: a single HackRF cannot reliably catch the FlatSat's
+# downlink reply -- it answers in ~11ms, faster than a half-duplex SDR can
+# close an uplink `hackrf_transfer -t` and reopen `hackrf_transfer -r`
+# (100ms+ of USB/device-reinit overhead, a deterministic hardware limit, not
+# RF noise). A second dedicated radio removes the race: this keeps the
+# CatSniffer in RX continuously while HackRF (pwnsat_lora_tx.py) stays
+# TX-only, so there's no window to miss.
 #
-# The CatSniffer, as connected this session, already had Electronic Cats'
-# own "LoRa Sniffer CLI 0.1" firmware flashed -- no firmware work needed
-# on our side, this module only drives its serial CLI (115200 8N1),
-# exactly like any other CLI tool this repo already shells out to. Its
-# defaults (SF7, CR 4/5, sync word 0x12, preamble length 8) already
-# matched New-firmware/rdownlink.h's downlink config out of the box;
-# only frequency (915.0 -> 916.0) and bandwidth (125 -> 250, index 8 in
-# this firmware's set_bw table -- confirmed by hand, not documented in
-# its `help` output) needed changing.
+# The CatSniffer already had Electronic Cats' "LoRa Sniffer CLI 0.1" firmware
+# flashed -- no firmware work needed; this only drives its serial CLI
+# (115200 8N1). Its defaults (SF7, CR 4/5, sync word 0x12, preamble 8)
+# matched New-firmware/rdownlink.h out of the box; only frequency
+# (915.0 -> 916.0) and bandwidth (125 -> 250, index 8) needed changing.
 
 from __future__ import annotations
 

@@ -5,38 +5,23 @@
 # CDC serial link (921600 baud), for attack scripts that need to send a
 # telecommand directly over USB instead of real RF (HackRF/RTL-SDR).
 #
-# Reuses this repo's own packet-building toolkit instead of re-deriving any
-# SPP/CCSDS/AES-ECB byte layout here -- same reasoning as
-# 2-DEFCON-Final/lib/pwnsat_packets.py's own docstring:
-#   - spp_tools.py (ground-station/pwnsat_tools/)   -> build_tc(), decode_packet()
-#   - pwnsat_crypto.py (same folder)                -> AES-128-ECB encrypt/decrypt
-#   - usb_tc_send.py (same folder)                  -> frame_usb() (0xAA 0x55
-#     <len:2 BE> <raw SPP>, the actual USBRadioLink wire framing) and
-#     iter_usb_sync_packets() (re-sync + split a raw byte stream back into
-#     individual 0xAA-framed packets)
-#   - pwnsat_packets.py (this same lib/ folder)      -> build_command_packet(),
-#     the one place that already knows how to build a byte-exact TC for
-#     every named command (ping, reset, thruster, beacon, broadcast, aes,
-#     gs-mode, gs-auth, gs-status, ...) from a handful of keyword overrides.
+# Reuses this repo's own packet toolkit instead of re-deriving any
+# SPP/CCSDS/AES-ECB byte layout here:
+#   - spp_tools.py (pwnsat_tools/)   -> build_tc(), decode_packet()
+#   - pwnsat_crypto.py               -> AES-128-ECB encrypt/decrypt
+#   - usb_tc_send.py                 -> frame_usb() (0xAA 0x55 <len:2 BE>
+#     <raw SPP>, the USBRadioLink wire framing) and iter_usb_sync_packets()
+#     (re-sync + split a raw stream back into 0xAA-framed packets)
+#   - pwnsat_packets.py (this lib/)  -> build_command_packet(), which builds
+#     a byte-exact TC for every named command (ping, reset, thruster,
+#     beacon, broadcast, aes, gs-mode, gs-auth, gs-status, ...)
 #
-# Port auto-detection: FlatSat exposes TWO USB CDC interfaces with the
-# EXACT SAME serial-number string (see backend/transport/port_detect.py's
-# own docstring for the full story) -- which one enumerates as
-# /dev/tty.usbmodemfsat1 vs ...fsat3 is not stable across reconnects. This
-# module reimplements that same probe-with-a-PING strategy locally (rather
-# than importing backend/transport/port_detect.py, which would pull in
-# FastAPI-adjacent backend.settings) -- same protocol-level building
-# blocks, zero coupling to the ground station's web app.
-#
-# NOT YET VALIDATED ON REAL HARDWARE -- unlike every _usb.py script in
-# PWNCUBE's own dossier (1-Blackhat-Final/Attacks/), this was written
-# without a FlatSat board connected in this session. The wire protocol
-# (framing, AES key, port-probe strategy) is taken directly from this
-# repo's own working tools (usb_tc_send.py, port_detect.py -- both already
-# confirmed working, used by PWNSAT-C3 itself), so the mechanism itself is
-# sound, but the specific scripts built on top of this module have not been
-# run against a real board yet. Confirm with a real board before treating
-# any of this dossier's *_usb.py output as validated.
+# Port auto-detection: FlatSat exposes TWO USB CDC interfaces with the SAME
+# serial-number string, and which one enumerates as ...fsat1 vs ...fsat3 is
+# not stable across reconnects. This reimplements backend port_detect.py's
+# probe-with-a-PING strategy locally (rather than importing it and pulling
+# in FastAPI-adjacent backend.settings) -- same protocol, zero web-app
+# coupling.
 
 from __future__ import annotations
 
