@@ -80,6 +80,7 @@ it for a live demo.
 |---|---|
 | `secure_link.cpp` / `.h` | Encrypts/decrypts the downlink payload with AES-128. A static 16-byte key embedded in the binary, ECB mode, no IV — the documented vulnerability. Exposes `secureLinkIsEnabled()`, `secureLinkEncodePayload()`, `secureLinkDecodePayload()`. |
 | `spacecan.cpp` / `.h` | Simulated SpaceCAN bus console (serial port, text), with 3 nodes (`SENSOR`/`MOTOR`/`BATTERY`), fragmented-frame reassembly, frame injection with no origin check (`SC INJECT`), and manual node reset (`SC RESET`) — 3 intentional vulnerabilities documented in the file's own header. Also contains the PWNSAT console shell (banner, menu, sensor dashboard mode) — none of this touches the radio/USB command path. |
+| `lidar.cpp` / `.h` | Tau LiDAR Camera payload subsystem. Ingests a reduced depth-frame summary uplinked by a payload host (`SET_LIDAR_FRAME`, `0x15`) and republishes it as telemetry (`LIDAR`, `0x14`). The ingest handler trusts the host summary verbatim — no plausibility check, no `payloadArmed` gate, no payload-source authentication — the documented payload-data-spoofing vulnerability. Host-side bridge, wire format, and tests live in [`../Payloads/lidar/`](../Payloads/lidar/). |
 
 ## Bugs fixed vs. the public firmware
 
@@ -144,6 +145,23 @@ timestamp, no freshness validation) before the payload, setting the
 hardcoded "unlock tag" `0xC35A` — a flash-read vulnerability with no real
 authentication), `GET_STATUS` (`0x0C`), `GET_PAYLOAD_STATUS` (`0x0F`),
 `DEBUG_CONFIG` (`0x10`, enables debug commands over USB only).
+
+### LiDAR payload subsystem (Tau LiDAR Camera)
+`lidar.cpp`/`.h`: a payload subsystem for the [Onion Tau LiDAR
+Camera](https://github.com/OnionIoT/tau-lidar-camera) (ESPROS epc660 ToF,
+160×60, mm). Because the camera is a USB-CDC device the RP2040 cannot host, it
+is driven by a companion payload host (`../Payloads/lidar/tau_lidar_bridge.py`)
+that reduces each depth frame to a compact summary (min/max/mean/center
+distance, valid-pixel %, amplitude) and uplinks it via the new
+`SET_LIDAR_FRAME` APID (`0x15`); the OBC stores it and re-emits it on
+`GET_LIDAR` / `LIDAR` (`0x14`), with `SC_TM_ID_LIDAR_*` telemetry IDs
+(`0x0B`–`0x10`). The OBC trusts the host summary verbatim — no plausibility
+bound on the distances, no `MISSION_MODE_PAYLOAD`/`payloadArmed` gate, and no
+authentication of the payload processor — so an injected `SET_LIDAR_FRAME` (or
+a compromised payload host) spoofs the spacecraft's reported ranges: the
+documented intentional vulnerability. The reduction/codec is byte-for-byte
+shared with the firmware and covered by hardware-free tests under
+[`../Payloads/lidar/`](../Payloads/lidar/).
 
 ### Command source separation (radio vs. USB)
 The public firmware had a single `commandHandler()`. There are now

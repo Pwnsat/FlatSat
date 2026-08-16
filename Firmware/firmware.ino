@@ -6,6 +6,7 @@
  *
  */
 #include "led.h"
+#include "lidar.h"
 #include "rdownlink.h"
 #include "ruplink.h"
 #include "sensors.h"
@@ -25,6 +26,7 @@ void setup() {
   ledConfigure();
   obcConfigureCore0();
   sensorsConfigure();
+  lidarConfigure();
   uplinkRadioConfigure();
   downlinkRadioConfigure();
   uplinkRadioRegisterCb(commandHandlerRadio);

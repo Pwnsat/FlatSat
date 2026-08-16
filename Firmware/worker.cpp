@@ -8,6 +8,7 @@
 
 #include "hardware/watchdog.h"
 #include "led.h"
+#include "lidar.h"
 #include "mission.h"
 #include "rdownlink.h"
 #include "ruplink.h"
@@ -143,6 +144,8 @@ static void telemetrySPPTransmitGroundModeStatus(uint8_t requested_mode);
 static void telemetrySPPTransmitGroundAccessStatus(uint8_t phase,
                                                    uint8_t auth_state);
 static void telemetrySPPTransmitGroundStatus(void);
+static void telemetrySPPTransmitLidarStatus(void);
+static void commandLidarFrameHandler(space_packet_t *space_packet);
 static void debugPrintTelemetryPacket(space_packet_t *space_packet,
                                       const char *route);
 static int telemetrySPPBuildPacketEx(space_packet_t *space_packet, uint8_t flag,
@@ -472,6 +475,10 @@ static const char *packetApidName(uint16_t apid) {
     return "GS_ACCESS";
   case SPP_APID_TC_GS_STATUS:
     return "GS_STATUS";
+  case SPP_APID_TC_GET_LIDAR:
+    return "GET_LIDAR";
+  case SPP_APID_TC_SET_LIDAR_FRAME:
+    return "SET_LIDAR_FRAME";
   case SPP_APID_IDLE:
     return "IDLE";
   default:
@@ -1234,6 +1241,71 @@ static void telemetrySPPTransmitPayloadStatus(void) {
   dispatchTelemetryPacket(&tm_packet, false);
 }
 
+static void telemetrySPPTransmitLidarStatus(void) {
+  lidar_summary_t s;
+  const bool have = lidarRead(&s);
+
+  uint8_t buffer[MAX_PAYLOAD_CHUNK] = {0};
+  int offset = 0;
+  buffer[offset++] = SPACECRAFT_ID;
+  buffer[offset++] = (uint8_t)(have ? 0x01 : 0x00); // present
+  buffer[offset++] = have ? s.frameType : 0x00;
+  bufferPackU16LE(buffer, &offset, have ? s.minMm : LIDAR_DIST_INVALID);
+  bufferPackU16LE(buffer, &offset, have ? s.maxMm : LIDAR_DIST_INVALID);
+  bufferPackU16LE(buffer, &offset, have ? s.meanMm : LIDAR_DIST_INVALID);
+  bufferPackU16LE(buffer, &offset, have ? s.centerMm : LIDAR_DIST_INVALID);
+  buffer[offset++] = have ? s.validPct : 0x00;
+  bufferPackU16LE(buffer, &offset, have ? s.amplitude : 0);
+  bufferPackU16LE(buffer, &offset, have ? s.width : 0);
+  bufferPackU16LE(buffer, &offset, have ? s.height : 0);
+  bufferPackU32LE(buffer, &offset, have ? s.frameCount : 0);
+  buffer[offset++] = have ? s.status : 0x00;
+  bufferPackU16LE(buffer, &offset, lidarIngestCount());
+  bufferPackU16LE(buffer, &offset, lidarSecondsSinceLast());
+
+  space_packet_t tm_packet;
+  const int ret = telemetrySPPBuildPacket(
+      &tm_packet, SPP_GROUP_FLAG_UNSEGMENTED, SPP_SECHEAD_FLAG_NOPRESENT, 0,
+      SPP_APID_TM_LIDAR, buffer, offset);
+  if (ret != SPP_ERROR_NONE) {
+    Serial.print("[ERROR] Telemetry SPP Pack Frame: ");
+    Serial.println(ret);
+    ledBlink(8, LED_COLOR_RED);
+    return;
+  }
+  dispatchTelemetryPacket(&tm_packet, false);
+}
+
+static void commandLidarFrameHandler(space_packet_t *space_packet) {
+  const uint16_t data_len = space_packet->header.length + 1;
+
+  // data[0] = SPACECRAFT_ID (payload source id); the summary block follows.
+  if (data_len < 1 + LIDAR_SUMMARY_WIRE_LEN) {
+    telemetrySPPTransmitError("LIDAR FRAME SHORT");
+    return;
+  }
+
+  // INTENTIONAL VULNERABILITY (educational -- FlatSat is vulnerable-by-design;
+  // every subsystem ships at least one teachable weakness, see Firmware/README).
+  // The OBC trusts the reduced LiDAR summary from the payload host verbatim:
+  //   * no plausibility check on the reported distances,
+  //   * no MISSION_MODE_PAYLOAD / payloadArmed gate, and
+  //   * no authentication of the payload processor beyond the shared link,
+  // then republishes it as authoritative spacecraft telemetry. An attacker who
+  // can inject this telecommand (or a compromised payload host) can therefore
+  // spoof the satellite's LiDAR ranges -- payload-data spoofing.
+  // See Payloads/lidar/README.md "Intentional vulnerability".
+  if (!lidarIngestSummary(&space_packet->data[1], (uint16_t)(data_len - 1))) {
+    telemetrySPPTransmitError("LIDAR FRAME PARSE");
+    return;
+  }
+
+  mission_ctx.payloadForwardCount++;
+  mission_ctx.lastPayloadLength =
+      (uint8_t)(data_len > 0xFF ? 0xFF : data_len);
+  telemetrySPPTransmitLidarStatus();
+}
+
 static void telemetrySPPTransmitNavSnapshot(void) {
   gps_nav_t nav = {0};
   gpsRead(&nav);
@@ -1601,6 +1673,10 @@ void commandApidHandler(space_packet_t *space_packet, command_source_t source) {
     commandGroundStationAccessHandler(space_packet);
   } else if (apid == SPP_APID_TC_GS_STATUS) {
     telemetrySPPTransmitGroundStatus();
+  } else if (apid == SPP_APID_TC_GET_LIDAR) {
+    telemetrySPPTransmitLidarStatus();
+  } else if (apid == SPP_APID_TC_SET_LIDAR_FRAME) {
+    commandLidarFrameHandler(space_packet);
   } else {
     Serial.printf("[ERROR] Unknown APID: 0x%02X \r\n", apid);
     telemetrySPPTransmitError("Error Unknown APID");
