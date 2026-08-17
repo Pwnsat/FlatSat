@@ -5,6 +5,11 @@ A new FlatSat **payload subsystem**: an [Onion Tau LiDAR Camera](https://github.
 spacecraft as CCSDS telemetry, plus the host-side bridge that drives it and a
 hardware-free test/simulation path.
 
+> **Bringing this up on hardware?** Follow **[`BRINGUP.md`](BRINGUP.md)** — a
+> single zero-to-running runbook (bill of materials → build/flash → camera →
+> live telemetry → the two attacks), written to teach the whole data path as you
+> go. This README is the component *reference*; `BRINGUP.md` is the *procedure*.
+
 ## Why a host bridge (and not a firmware sensor)
 
 The Tau is a **USB-C depth camera** — it enumerates as a USB-CDC device and

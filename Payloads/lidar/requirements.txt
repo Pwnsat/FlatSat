@@ -1,0 +1,13 @@
+# Payload-host dependencies for the Tau LiDAR bridge (live-camera path).
+#
+# The reduction core (tau_lidar_payload.py) and its tests need NOTHING beyond
+# the Python standard library -- install this only when driving a real camera.
+#
+#   python3 -m pip install -r requirements.txt
+#
+# Pulls in TauLidarCommon, pyserial and numpy transitively.
+TauLidarCamera>=0.0.5
+
+# NOTE: the CCSDS transport used to forward frames to the OBC (Attacks/lib/
+# flatsat_usb.py) and the attack scripts import pwnsat_tools from the sibling
+# PWNSAT-C3 repo -- that is a git checkout, not a pip package. See BRINGUP.md.
