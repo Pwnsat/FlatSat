@@ -223,3 +223,47 @@ def parse_lidar_payload(payload):
     if len(payload) < 1 + SUMMARY_WIRE_LEN:
         raise ValueError("lidar payload too short")
     return payload[0], decode_summary(payload[1:])
+
+
+# Canned spoofing scenarios for the payload-data-spoofing attack (Attacks/08).
+# Each is a plausible-but-forged scene the OBC will accept and republish.
+SPOOF_PRESETS = {
+    # A phantom obstacle inches from the sensor.
+    "collision": dict(min_mm=150, mean_mm=350, max_mm=2000, center_mm=180,
+                      valid_pct=95, amplitude=800, status=STATUS_FRAME_VALID),
+    # Everything reads far away -- "the path is clear".
+    "clear": dict(min_mm=4400, mean_mm=4450, max_mm=4490, center_mm=4450,
+                  valid_pct=100, amplitude=600, status=STATUS_FRAME_VALID),
+    # A blinded sensor: every pixel a no-return.
+    "blind": dict(min_mm=DIST_INVALID, mean_mm=DIST_INVALID, max_mm=DIST_INVALID,
+                  center_mm=DIST_INVALID, valid_pct=0, amplitude=0,
+                  status=STATUS_ALL_INVALID),
+}
+
+
+def spoof_summary(
+    preset="collision",
+    *,
+    frame_type=FRAME_TYPE_DISTANCE_AMPLITUDE,
+    frame_count=1,
+    **overrides,
+):
+    """Build a canned :class:`LidarSummary` for the payload-spoofing attack.
+
+    ``preset`` selects a scene from :data:`SPOOF_PRESETS`; ``overrides`` (keyed
+    by ``LidarSummary`` field name, e.g. ``min_mm=200``) replace individual
+    fields -- ``None`` values are ignored so CLI defaults pass through cleanly.
+    """
+    if preset not in SPOOF_PRESETS:
+        raise ValueError(
+            "unknown preset %r (have %s)" % (preset, ", ".join(SPOOF_PRESETS))
+        )
+    fields = dict(SPOOF_PRESETS[preset])
+    fields.update({k: v for k, v in overrides.items() if v is not None})
+    return LidarSummary(
+        frame_type=frame_type,
+        frame_count=frame_count,
+        width=FRAME_WIDTH,
+        height=FRAME_HEIGHT,
+        **fields,
+    )

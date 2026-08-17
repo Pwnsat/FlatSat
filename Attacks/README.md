@@ -1,6 +1,6 @@
-# FlatSat Attacks 00–07
+# FlatSat Attacks 00–08
 
-Eight attack scripts exploiting the vulnerabilities documented in
+Nine attack scripts exploiting the vulnerabilities documented in
 [`../Firmware/`](../Firmware/), each available in two variants:
 
 - **`*_rf.py`** — the physically-realistic version, over the air via
@@ -19,6 +19,14 @@ Eight attack scripts exploiting the vulnerabilities documented in
 | `05_gs_auth_spoofing/` | Ground-station auth bypass (static XOR key) | `0x12` |
 | `06_replay/` | Telecommand replay (no anti-replay) | `0x01` |
 | `07_resetc/` | Unauthenticated `RESETC` reboot | `0x02` |
+| `08_lidar_payload_spoof/` | Tau LiDAR payload-data spoofing (OBC trusts the host summary) | `0x15` |
+
+> **Note on `08`:** unlike `00`–`07`, the LiDAR payload-spoofing scripts have
+> not yet been confirmed on real hardware — the reduction/codec and the forged
+> `SET_LIDAR_FRAME` bytes are tested (see `../Payloads/lidar/`), and the wire
+> layout was verified byte-for-byte against the firmware, but the on-air /
+> on-board run is pending a physical bring-up. `08` exercises the new
+> [Tau LiDAR payload subsystem](../Payloads/lidar/).
 
 Full step-by-step walkthrough for each attack — prerequisites, exact
 commands, and how to confirm it worked — is in the wiki:

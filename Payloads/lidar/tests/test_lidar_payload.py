@@ -14,6 +14,7 @@ from tau_lidar_payload import (  # noqa: E402
     DIST_INVALID,
     FRAME_HEIGHT,
     FRAME_WIDTH,
+    SPOOF_PRESETS,
     STATUS_ALL_INVALID,
     STATUS_FRAME_VALID,
     STATUS_SATURATED,
@@ -24,6 +25,7 @@ from tau_lidar_payload import (  # noqa: E402
     encode_summary,
     parse_lidar_payload,
     reduce_frame,
+    spoof_summary,
 )
 
 
@@ -165,6 +167,37 @@ def test_reduce_rejects_short_frame():
     except ValueError:
         return
     raise AssertionError("expected ValueError for short frame")
+
+
+def test_spoof_presets_roundtrip_and_wire_valid():
+    # Every attack preset (Attacks/08) must encode to a valid 22-byte payload
+    # that round-trips through the firmware-shared codec unchanged.
+    for name in SPOOF_PRESETS:
+        s = spoof_summary(name)
+        payload = build_lidar_payload(s)
+        assert len(payload) == 1 + SUMMARY_WIRE_LEN
+        sc_id, back = parse_lidar_payload(payload)
+        assert sc_id == 0x01
+        assert back == s
+    # Scene semantics.
+    assert spoof_summary("collision").min_mm < 500
+    assert spoof_summary("clear").min_mm > 4000
+    assert spoof_summary("blind").status & STATUS_ALL_INVALID
+    assert spoof_summary("blind").min_mm == DIST_INVALID
+
+
+def test_spoof_override_applies():
+    s = spoof_summary("clear", min_mm=200, center_mm=None)
+    assert s.min_mm == 200  # override wins
+    assert s.center_mm == SPOOF_PRESETS["clear"]["center_mm"]  # None ignored
+
+
+def test_spoof_unknown_preset_rejected():
+    try:
+        spoof_summary("nope")
+    except ValueError:
+        return
+    raise AssertionError("expected ValueError for unknown preset")
 
 
 def test_simulated_scene_end_to_end():
