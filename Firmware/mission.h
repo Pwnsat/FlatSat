@@ -88,6 +88,8 @@
 // Payloads
 #define SPP_APID_TC_GET_LIDAR 0x14
 #define SPP_APID_TC_SET_LIDAR_FRAME 0x15
+// Autonomy
+#define SPP_APID_TC_GET_AUTONOMY 0x16
 /* APIDS TM */
 // On Board Computer
 #define SPP_APID_TM_PING 0x01
@@ -113,5 +115,7 @@
 #define SPP_APID_TM_GS_STATUS 0x13
 // Payloads
 #define SPP_APID_TM_LIDAR 0x14
+// Autonomy
+#define SPP_APID_TM_AUTONOMY 0x16
 
 #endif // FIRMWARE_MISSION_H

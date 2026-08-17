@@ -19,7 +19,7 @@ Nine attack scripts exploiting the vulnerabilities documented in
 | `05_gs_auth_spoofing/` | Ground-station auth bypass (static XOR key) | `0x12` |
 | `06_replay/` | Telecommand replay (no anti-replay) | `0x01` |
 | `07_resetc/` | Unauthenticated `RESETC` reboot | `0x02` |
-| `08_lidar_payload_spoof/` | Tau LiDAR payload-data spoofing (OBC trusts the host summary) | `0x15` |
+| `08_lidar_payload_spoof/` | Tau LiDAR payload-data spoofing → poisons collision-avoidance autonomy into an uncommanded thruster burn | `0x15` |
 
 > **Note on `08`:** unlike `00`–`07`, the LiDAR payload-spoofing scripts have
 > not yet been confirmed on real hardware — the reduction/codec and the forged

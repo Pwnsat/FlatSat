@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
  */
+#include "autonomy.h"
 #include "led.h"
 #include "lidar.h"
 #include "rdownlink.h"
@@ -27,6 +28,7 @@ void setup() {
   obcConfigureCore0();
   sensorsConfigure();
   lidarConfigure();
+  autonomyConfigure();
   uplinkRadioConfigure();
   downlinkRadioConfigure();
   uplinkRadioRegisterCb(commandHandlerRadio);

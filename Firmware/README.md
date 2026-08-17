@@ -81,6 +81,7 @@ it for a live demo.
 | `secure_link.cpp` / `.h` | Encrypts/decrypts the downlink payload with AES-128. A static 16-byte key embedded in the binary, ECB mode, no IV — the documented vulnerability. Exposes `secureLinkIsEnabled()`, `secureLinkEncodePayload()`, `secureLinkDecodePayload()`. |
 | `spacecan.cpp` / `.h` | Simulated SpaceCAN bus console (serial port, text), with 3 nodes (`SENSOR`/`MOTOR`/`BATTERY`), fragmented-frame reassembly, frame injection with no origin check (`SC INJECT`), and manual node reset (`SC RESET`) — 3 intentional vulnerabilities documented in the file's own header. Also contains the PWNSAT console shell (banner, menu, sensor dashboard mode) — none of this touches the radio/USB command path. |
 | `lidar.cpp` / `.h` | Tau LiDAR Camera payload subsystem. Ingests a reduced depth-frame summary uplinked by a payload host (`SET_LIDAR_FRAME`, `0x15`) and republishes it as telemetry (`LIDAR`, `0x14`). The ingest handler trusts the host summary verbatim — no plausibility check, no `payloadArmed` gate, no payload-source authentication — the documented payload-data-spoofing vulnerability. Host-side bridge, wire format, and tests live in [`../Payloads/lidar/`](../Payloads/lidar/). |
+| `autonomy.cpp` / `.h` | Collision-avoidance autonomy that reacts to the LiDAR proximity on every ingested frame. It reads the IMU as if fusing it, but the maneuver is gated on the LiDAR reading alone (`GET_AUTONOMY`/`AUTONOMY`, `0x16`) — the sensor-fusion-poisoning vulnerability: a spoofed proximity ([`../Attacks/08_lidar_payload_spoof/`](../Attacks/08_lidar_payload_spoof/)) fires the avoidance thruster with no independent sensor agreement. |
 
 ## Bugs fixed vs. the public firmware
 
@@ -162,6 +163,20 @@ a compromised payload host) spoofs the spacecraft's reported ranges: the
 documented intentional vulnerability. The reduction/codec is byte-for-byte
 shared with the firmware and covered by hardware-free tests under
 [`../Payloads/lidar/`](../Payloads/lidar/).
+
+### Collision-avoidance autonomy (sensor-fusion poisoning)
+`autonomy.cpp`/`.h`: an onboard hazard response that runs on every ingested
+LiDAR frame. When the reported proximity drops below `AUTONOMY_HAZARD_MM`
+(500 mm) and autonomy is armed (any operational mission mode), it commands the
+avoidance thruster (`thrusterSetT0Power`) and reports the decision on the new
+`GET_AUTONOMY`/`AUTONOMY` APID (`0x16`). It reads the accelerometer into the
+decision record — presenting as a fused LiDAR+IMU check — but the maneuver is
+gated on the LiDAR proximity **alone**: no check that the IMU corroborates real
+motion toward a hazard, no plausibility bound, no rate limit. Because the LiDAR
+summary is attacker-controlled (`SET_LIDAR_FRAME`), a single spoofed "collision"
+frame from [`../Attacks/08_lidar_payload_spoof/`](../Attacks/08_lidar_payload_spoof/)
+makes the spacecraft autonomously fire its thruster with no human command and no
+independent sensor agreement — the intended sensor-fusion-poisoning lesson.
 
 ### Command source separation (radio vs. USB)
 The public firmware had a single `commandHandler()`. There are now

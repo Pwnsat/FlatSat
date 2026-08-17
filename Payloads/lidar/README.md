@@ -107,6 +107,14 @@ fabricated LiDAR ranges. `tau_lidar_bridge.py --dry-run` prints the exact bytes,
 which makes crafting a spoofed frame a one-line exercise — a clean lead-in to a
 "trust the payload bus" lesson.
 
+That spoof also has a downstream consequence: the firmware's collision-avoidance
+autonomy (`Firmware/autonomy.cpp`) reacts to the LiDAR proximity on every
+ingested frame and — because it never cross-checks the IMU — a spoofed
+`collision` frame makes the spacecraft autonomously fire its avoidance thruster.
+See [`../../Attacks/08_lidar_payload_spoof/`](../../Attacks/08_lidar_payload_spoof/),
+which reads back both the `LIDAR` (`0x14`) and `AUTONOMY` (`0x16`) telemetry to
+prove the poisoning took effect.
+
 ## Upstream note
 
 The Tau SDK (`TauLidarCamera`, `TauLidarCommon`) is MIT-licensed but effectively

@@ -7,6 +7,7 @@
  */
 
 #include "hardware/watchdog.h"
+#include "autonomy.h"
 #include "led.h"
 #include "lidar.h"
 #include "mission.h"
@@ -145,6 +146,7 @@ static void telemetrySPPTransmitGroundAccessStatus(uint8_t phase,
                                                    uint8_t auth_state);
 static void telemetrySPPTransmitGroundStatus(void);
 static void telemetrySPPTransmitLidarStatus(void);
+static void telemetrySPPTransmitAutonomyStatus(void);
 static void commandLidarFrameHandler(space_packet_t *space_packet);
 static void debugPrintTelemetryPacket(space_packet_t *space_packet,
                                       const char *route);
@@ -479,6 +481,8 @@ static const char *packetApidName(uint16_t apid) {
     return "GET_LIDAR";
   case SPP_APID_TC_SET_LIDAR_FRAME:
     return "SET_LIDAR_FRAME";
+  case SPP_APID_TC_GET_AUTONOMY:
+    return "GET_AUTONOMY";
   case SPP_APID_IDLE:
     return "IDLE";
   default:
@@ -707,6 +711,14 @@ static void commandDebugConfigHandler(bool new_state) {
 
 static bool missionModePayloadArmed(uint8_t mode) {
   return mode == MISSION_MODE_PAYLOAD || mode == MISSION_MODE_SCIENCE;
+}
+
+// Collision-avoidance autonomy is active in the operational mission modes
+// (nominal/payload/science), and inhibited in safe/contingency.
+static bool missionAutonomyArmed(void) {
+  return mission_ctx.mode == MISSION_MODE_NOMINAL ||
+         mission_ctx.mode == MISSION_MODE_PAYLOAD ||
+         mission_ctx.mode == MISSION_MODE_SCIENCE;
 }
 
 static uint8_t missionStatusFlags(void) {
@@ -1276,6 +1288,36 @@ static void telemetrySPPTransmitLidarStatus(void) {
   dispatchTelemetryPacket(&tm_packet, false);
 }
 
+static void telemetrySPPTransmitAutonomyStatus(void) {
+  autonomy_state_t a;
+  const bool have = autonomyRead(&a);
+
+  uint8_t buffer[MAX_PAYLOAD_CHUNK] = {0};
+  int offset = 0;
+  buffer[offset++] = SPACECRAFT_ID;
+  buffer[offset++] = (uint8_t)(have && a.armed ? 0x01 : 0x00);
+  buffer[offset++] = (uint8_t)(have && a.hazard ? 0x01 : 0x00);
+  bufferPackU16LE(buffer, &offset, have ? a.lidarMinMm : LIDAR_DIST_INVALID);
+  bufferPackU16LE(buffer, &offset, have ? a.lidarCenterMm : LIDAR_DIST_INVALID);
+  bufferPackU16LE(buffer, &offset, have ? a.imuMilliG : 0);
+  buffer[offset++] = have ? a.action : AUTONOMY_ACTION_NONE;
+  buffer[offset++] = have ? a.thrusterCmd : 0x00;
+  bufferPackU16LE(buffer, &offset, have ? a.triggerCount : 0);
+  bufferPackU16LE(buffer, &offset, autonomySecondsSinceTrigger());
+
+  space_packet_t tm_packet;
+  const int ret = telemetrySPPBuildPacket(
+      &tm_packet, SPP_GROUP_FLAG_UNSEGMENTED, SPP_SECHEAD_FLAG_NOPRESENT, 0,
+      SPP_APID_TM_AUTONOMY, buffer, offset);
+  if (ret != SPP_ERROR_NONE) {
+    Serial.print("[ERROR] Telemetry SPP Pack Frame: ");
+    Serial.println(ret);
+    ledBlink(8, LED_COLOR_RED);
+    return;
+  }
+  dispatchTelemetryPacket(&tm_packet, false);
+}
+
 static void commandLidarFrameHandler(space_packet_t *space_packet) {
   const uint16_t data_len = space_packet->header.length + 1;
 
@@ -1303,6 +1345,18 @@ static void commandLidarFrameHandler(space_packet_t *space_packet) {
   mission_ctx.payloadForwardCount++;
   mission_ctx.lastPayloadLength =
       (uint8_t)(data_len > 0xFF ? 0xFF : data_len);
+
+  // Sensor-fusion autonomy reacts to the just-ingested (attacker-controllable)
+  // LiDAR proximity. On a hazard it actuates and reports what it did -- see the
+  // poisoning vulnerability documented in autonomy.cpp / Attacks/08.
+  lidar_summary_t ingested;
+  if (lidarRead(&ingested)) {
+    const uint8_t action = autonomyEvaluate(&ingested, missionAutonomyArmed());
+    if (action != AUTONOMY_ACTION_NONE) {
+      telemetrySPPTransmitAutonomyStatus();
+    }
+  }
+
   telemetrySPPTransmitLidarStatus();
 }
 
@@ -1677,6 +1731,8 @@ void commandApidHandler(space_packet_t *space_packet, command_source_t source) {
     telemetrySPPTransmitLidarStatus();
   } else if (apid == SPP_APID_TC_SET_LIDAR_FRAME) {
     commandLidarFrameHandler(space_packet);
+  } else if (apid == SPP_APID_TC_GET_AUTONOMY) {
+    telemetrySPPTransmitAutonomyStatus();
   } else {
     Serial.printf("[ERROR] Unknown APID: 0x%02X \r\n", apid);
     telemetrySPPTransmitError("Error Unknown APID");
