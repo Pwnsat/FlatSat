@@ -31,8 +31,12 @@ import serial.tools.list_ports
 
 CATSNIFFER_BAUD = 115200
 
-# Mirrors New-firmware/rdownlink.h's downlink radio config exactly.
-DOWNLINK_FREQ_MHZ = 916.0
+# Mirrors New-firmware/rdownlink.h's downlink radio config -- frequency
+# comes from lib/regions.py (FLATSAT_REGION env var) so a build for a
+# different ISM band stays aligned with the firmware. us915 default
+# gives 916.0 MHz, the historical value.
+from regions import DOWNLINK_FREQ_MHZ  # noqa: F401  (re-exported)
+
 DOWNLINK_BW_INDEX = 8  # this firmware's set_bw takes a table INDEX, not
                        # kHz directly -- confirmed by hand: index 8 -> 250 kHz
 DOWNLINK_SF = 7

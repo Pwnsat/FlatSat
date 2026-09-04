@@ -20,10 +20,11 @@
 # running under the wrong Python fails there with a clear message
 # instead of here.
 #
-# Radio parameters below (918 MHz uplink, BW 250 kHz, SF7, CR 4/5, sync word
-# 0x12, explicit header, PHY CRC disabled) are copied from
+# Radio parameters below (BW 250 kHz, SF7, CR 4/5, sync word 0x12,
+# explicit header, PHY CRC disabled) are copied from
 # New-firmware/ruplink.cpp's uplinkRadioConfigure(). Get any wrong and the
-# SX1262 never sees the packet.
+# SX1262 never sees the packet. The center frequency is region-dependent
+# and comes from lib/regions.py.
 #
 # Why this renders to a file and shells out to hackrf_transfer instead of
 # streaming live through a GNU Radio soapy.sink: the live soapy.sink -> HackRF
@@ -47,12 +48,18 @@ from gnuradio import blocks
 import gnuradio.lora_sdr as lora_sdr
 
 # New-firmware/ruplink.h + ruplink.cpp's uplinkRadioConfigure(): this is the
-# uplink the FlatSat's radio0 actually listens on for telecommands. (916 MHz
-# is the separate downlink/telemetry frequency -- see rdownlink.h -- not
-# used for TX by any attack in this folder except where a script explicitly
+# uplink the FlatSat's radio0 actually listens on for telecommands. The
+# separate downlink/telemetry frequency (see rdownlink.h) is not used for
+# TX by any attack in this folder except where a script explicitly
 # overrides it, e.g. broadcast-relay-style attacks that abuse
-# BROADCAST_MSG's attacker-controlled frequency field.)
-UPLINK_FREQ_HZ = 918_000_000
+# BROADCAST_MSG's attacker-controlled frequency field.
+#
+# The exact center frequency depends on the firmware's ISM region build
+# -- lib/regions.py reads $FLATSAT_REGION and picks the same defaults
+# Firmware/regions.h uses (us915 default: 918 MHz uplink / 916 MHz
+# downlink; eu868, eu433, as923 alternatives).
+from regions import UPLINK_FREQ_HZ  # noqa: F401  (re-exported)
+
 UPLINK_BW_HZ = 250_000
 UPLINK_SF = 7
 UPLINK_CR = 1  # gr-lora_sdr's cr=1 means "4/5" -- matches RadioLib's setCodingRate(5)

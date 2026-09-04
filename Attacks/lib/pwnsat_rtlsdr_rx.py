@@ -32,9 +32,11 @@ if str(_EAVESDROPPING_DIR) not in sys.path:
 
 from pwnsat_lora_rx import PwnsatLoraRX  # noqa: E402
 
-# Mirrors New-firmware/rdownlink.h's downlink radio config exactly --
-# same values pwnsat_catsniffer_rx.py and pwnsat_lora_rx_capture.py use.
-DOWNLINK_FREQ_HZ = 916_000_000
+# Mirrors New-firmware/rdownlink.h's downlink radio config -- frequency
+# comes from lib/regions.py so a build for a different ISM region
+# (FLATSAT_REGION=eu868, etc.) stays aligned with the firmware.
+from regions import DOWNLINK_FREQ_HZ  # noqa: F401  (re-exported)
+
 DOWNLINK_BW_HZ = 250_000
 DOWNLINK_SF = 7
 
@@ -92,7 +94,7 @@ class RtlSdrRX:
         self._thread.start()
         self._started = True
         if self.verbose:
-            print(f"[RTL-SDR] listening at {DOWNLINK_FREQ_HZ/1e6:.2f}MHz "
+            print(f"[RTL-SDR] listening at {self._tb.frequency/1e6:.2f}MHz "
                   f"via {self._zmq_address}")
 
     def _reader_loop(self) -> None:

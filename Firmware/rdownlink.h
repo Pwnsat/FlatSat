@@ -7,9 +7,15 @@
  */
 #ifndef FIRMWARE_RDOWNLINK_H
 #define FIRMWARE_RDOWNLINK_H
+#include "regions.h"
 #include <Arduino.h>
 
-#define DOWNLINK_FREQ (916)
+// DOWNLINK_FREQ_MHZ carries sub-MHz precision (float) for setFrequency();
+// DOWNLINK_FREQ is the truncated integer MHz kept for the u16
+// lastPayloadFrequency field and %u dashboard printouts.
+#define DOWNLINK_FREQ_KHZ (FLATSAT_DOWNLINK_FREQ_KHZ)
+#define DOWNLINK_FREQ_MHZ (FLATSAT_DOWNLINK_FREQ_KHZ / 1000.0f)
+#define DOWNLINK_FREQ ((uint16_t)(FLATSAT_DOWNLINK_FREQ_KHZ / 1000))
 #define DOWNLINK_BW (250)
 #define DOWNLINK_SF (7)
 #define DOWNLINK_CR (5)
