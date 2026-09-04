@@ -1,0 +1,18 @@
+# pip-installable Python dependencies for the attack scripts. Both
+# _usb.py and _rf.py import pwnsat_packets, which needs pyserial (USB
+# transport, catsniffer) and an AES backend (via PWNSAT-C3's
+# pwnsat_crypto -- which tries Cryptodome, then Crypto, then the
+# `cryptography` package; that last one is the universal-wheel pick
+# that always resolves, hence its choice here).
+#
+# numpy and pyzmq are NOT listed: the _rf.py path needs them but that
+# path also needs GNU Radio, which is only reachable from the system
+# Python (Homebrew/apt) whose bundle already ships numpy + pyzmq. See
+# README.md's "Python dependencies" for the exact venv setup.
+#
+# pwnsat_tools/ (spp_tools, pwnsat_crypto, usb_tc_send) is imported
+# from the PWNSAT-C3 sibling repo, not pip -- see README.md's
+# "Dependency: PWNSAT-C3" section.
+
+pyserial>=3.5
+cryptography>=41.0

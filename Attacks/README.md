@@ -51,6 +51,34 @@ No other install step is needed beyond what
 already covers (Python deps, and the optional GNU Radio/SoapySDR/HackRF
 toolchain the `_rf.py` scripts need).
 
+## Python dependencies
+
+Both `_usb.py` and `_rf.py` need `pyserial` and `cryptography` installed
+under whatever Python they run on. GNU Radio + `gnuradio.lora_sdr` are
+compiled system packages (Homebrew/apt), **not** pip packages, so the
+`_rf.py` path must run under the system Python that has GNU Radio
+installed. Homebrew and modern Debian/Ubuntu block direct `pip install`
+into that Python ([PEP 668](https://peps.python.org/pep-0668/)), so the
+clean setup is a `--system-site-packages` venv on top of it — the venv
+inherits GNU Radio from the system and takes the two pip deps on top:
+
+```shell
+cd Attacks
+# on macOS/Homebrew, Apple Silicon; adjust the base python path elsewhere:
+/opt/homebrew/bin/python3 -m venv --system-site-packages .venv
+. .venv/bin/activate
+python -c 'import gnuradio, gnuradio.lora_sdr'    # sanity check, only if you plan _rf.py
+pip install -r requirements.txt
+```
+
+For a **USB-only** setup (no RF), a plain venv is enough:
+
+```shell
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+```
+
 ## `lib/`
 
 Shared code the scripts above import, not run directly:
