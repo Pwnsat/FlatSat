@@ -51,12 +51,41 @@ No other install step is needed beyond what
 already covers (Python deps, and the optional GNU Radio/SoapySDR/HackRF
 toolchain the `_rf.py` scripts need).
 
+## Python dependencies
+
+Both `_usb.py` and `_rf.py` need `pyserial` and `cryptography` installed
+under whatever Python they run on. GNU Radio + `gnuradio.lora_sdr` are
+compiled system packages (Homebrew/apt), **not** pip packages, so the
+`_rf.py` path must run under the system Python that has GNU Radio
+installed. Homebrew and modern Debian/Ubuntu block direct `pip install`
+into that Python ([PEP 668](https://peps.python.org/pep-0668/)), so the
+clean setup is a `--system-site-packages` venv on top of it — the venv
+inherits GNU Radio from the system and takes the two pip deps on top:
+
+```shell
+cd Attacks
+# on macOS/Homebrew, Apple Silicon; adjust the base python path elsewhere:
+/opt/homebrew/bin/python3 -m venv --system-site-packages .venv
+. .venv/bin/activate
+python -c 'import gnuradio, gnuradio.lora_sdr'    # sanity check, only if you plan _rf.py
+pip install -r requirements.txt
+```
+
+For a **USB-only** setup (no RF), a plain venv is enough:
+
+```shell
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+```
+
 ## `lib/`
 
 Shared code the scripts above import, not run directly:
 
 | File | Purpose |
 | --- | --- |
+| `regions.py` | ISM region presets (mirrors `../../Firmware/regions.h`) — reads `$FLATSAT_REGION` and exposes `UPLINK_FREQ_HZ`/`DOWNLINK_FREQ_HZ` (plus `_MHZ` variants) so TX/RX default to whatever the firmware was built for. See [Region configuration](#region-configuration). |
 | `pwnsat_packets.py` | Bootstraps `pwnsat_tools/` onto `sys.path` and re-exports packet building/decoding. |
 | `flatsat_usb.py` | `FlatSatUSB` — the USB serial transport the `*_usb.py` scripts use. |
 | `pwnsat_lora_tx.py` | HackRF TX helper (shells out to `hackrf_transfer`). |
@@ -65,6 +94,29 @@ Shared code the scripts above import, not run directly:
 | `pwnsat_rtlsdr_rx.py` | RTL-SDR downlink listener, reuses `01_eavesdropping/pwnsat_lora_rx.py`. |
 | `decrypt_display.py` | Decrypts and pretty-prints a captured downlink payload. |
 | `require_gnuradio.py` | Fails fast with a clear message if GNU Radio isn't importable. |
+
+## Region configuration
+
+The `_rf.py` scripts default their TX (uplink) and RX (downlink) center
+frequencies to whatever ISM region the FlatSat firmware was built for.
+Pick one via the `FLATSAT_REGION` env var — the same four presets as
+[Firmware/regions.h](../Firmware/README.md#region-configuration):
+
+| `FLATSAT_REGION` | Uplink (TX) | Downlink (RX) |
+|---|---|---|
+| `us915` (default) | 918.0 MHz | 916.0 MHz |
+| `eu868` | 869.0 MHz | 867.0 MHz |
+| `eu433` | 434.5 MHz | 433.5 MHz |
+| `as923` | 924.0 MHz | 922.0 MHz |
+
+```shell
+# match a firmware built for EU868 (`pio run -e pico_tinyusb_eu868`):
+FLATSAT_REGION=eu868 python 07_resetc/07_resetc_rf.py
+```
+
+Each `_rf.py` script also accepts a `--frequency` flag to override just
+that one run without changing the env. `lib/regions.py` holds the table
+and must stay in sync with `../Firmware/regions.h`.
 
 ## Safety
 

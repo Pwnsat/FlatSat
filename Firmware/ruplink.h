@@ -7,9 +7,15 @@
  */
 #ifndef FIRMWARE_RUPLINK_H
 #define FIRMWARE_RUPLINK_H
+#include "regions.h"
 #include <Arduino.h>
 
-#define UPLINK_FREQ (918)
+// UPLINK_FREQ_MHZ carries sub-MHz precision (float) for setFrequency();
+// UPLINK_FREQ is the truncated integer MHz kept for the u16
+// lastPayloadFrequency field and %u dashboard printouts.
+#define UPLINK_FREQ_KHZ (FLATSAT_UPLINK_FREQ_KHZ)
+#define UPLINK_FREQ_MHZ (FLATSAT_UPLINK_FREQ_KHZ / 1000.0f)
+#define UPLINK_FREQ ((uint16_t)(FLATSAT_UPLINK_FREQ_KHZ / 1000))
 #define UPLINK_BW (250)
 #define UPLINK_SF (7)
 #define UPLINK_CR (5)

@@ -39,7 +39,7 @@ void downlinkRadioConfigure(void) {
     Serial.printf("Error: %d\r\n", state);
     return;
   }
-  radio1.setFrequency(DOWNLINK_FREQ);
+  radio1.setFrequency(DOWNLINK_FREQ_MHZ);
   radio1.setBandwidth(DOWNLINK_BW);
   radio1.setSpreadingFactor(DOWNLINK_SF);
   radio1.setCodingRate(DOWNLINK_CR);
@@ -76,7 +76,7 @@ bool downlinkRadioTransmitBroadcast(uint16_t frequency, uint8_t *buffer,
     return false;
   }
   ledBlink(8, LED_COLOR_WHITE);
-  radio1.setFrequency(DOWNLINK_FREQ);
+  radio1.setFrequency(DOWNLINK_FREQ_MHZ);
   return true;
 }
 

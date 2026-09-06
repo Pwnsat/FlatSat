@@ -1408,8 +1408,8 @@ static void printSystemStatusDashboard(void) {
                 uptime_ms);
   Serial.println();
   Serial.println("--- RADIO SUBSYSTEM ---");
-  Serial.printf("Downlink:            %u MHz\r\n", DOWNLINK_FREQ);
-  Serial.printf("Uplink:              %u MHz\r\n", UPLINK_FREQ);
+  Serial.printf("Downlink:            %.1f MHz\r\n", (double)DOWNLINK_FREQ_MHZ);
+  Serial.printf("Uplink:              %.1f MHz\r\n", (double)UPLINK_FREQ_MHZ);
   Serial.println();
   Serial.println("--- GPS / NAV ---");
   Serial.printf("UART OK:             %s\r\n", nav.uartOk ? "true" : "false");

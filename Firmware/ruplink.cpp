@@ -120,7 +120,7 @@ void uplinkRadioConfigure(void) {
     Serial.printf("Error: %d\r\n", state);
     return;
   }
-  radio0.setFrequency(UPLINK_FREQ);
+  radio0.setFrequency(UPLINK_FREQ_MHZ);
   radio0.setBandwidth(UPLINK_BW);
   radio0.setSpreadingFactor(UPLINK_SF);
   radio0.setCodingRate(UPLINK_CR);

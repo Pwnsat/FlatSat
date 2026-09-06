@@ -53,17 +53,54 @@ equivalent):
 | `NeoPixelBus` | Status LED |
 | `Adafruit_TinyUSB` (bundled with earlephilhower's RP2040 core, no separate install needed) | Dual-core USB serial console (CDC) |
 
-This folder includes `platformio.ini` (`pico_tinyusb` environment) with all
-4 `lib_deps` pinned — `pio run` from here builds with no manual steps. If
-you use the Arduino IDE instead, install the earlephilhower RP2040 core via
-Boards Manager and the libraries in the table above via Library Manager
-before opening `firmware.ino`.
+This folder includes `platformio.ini` with all 4 `lib_deps` pinned and one
+env per ISM region (`pico_tinyusb_us915` is the default; see
+[Region configuration](#region-configuration) below). `pio run` from here
+builds with no manual steps. If you use the Arduino IDE instead, install
+the earlephilhower RP2040 core via Boards Manager and the libraries in the
+table above via Library Manager before opening `firmware.ino`.
+
+## Region configuration
+
+The uplink and downlink center frequencies are picked at build time from
+one of four ISM region presets. Every preset keeps a `+2 MHz`
+uplink/downlink split (uplink is 2 MHz above downlink) except `EU433`,
+which uses `+1 MHz` on half-MHz boundaries to fit a 250 kHz channel BW
+strictly inside the CEPT ISM `433.05–434.79 MHz` window.
+
+| Region (env)          | Uplink   | Downlink | Notes |
+|---|---|---|---|
+| `us915` (default)     | 918.0 MHz | 916.0 MHz | Historical hardcoded pair, `pio run` with no `-e` builds this. |
+| `eu868`               | 869.0 MHz | 867.0 MHz | Both centers inside 863–870 MHz (CEPT). |
+| `eu433`               | 434.5 MHz | 433.5 MHz | Both channels (±125 kHz) strictly inside CEPT ISM 433. |
+| `as923`               | 924.0 MHz | 922.0 MHz | Japan/Korea/SG/NZ (AS923 plan). |
+
+Build one specific env:
+
+```shell
+pio run -e pico_tinyusb_eu868          # firmware for Europe 868 MHz
+pio run -e pico_tinyusb_eu433          # Europe/Asia 433 MHz ISM
+pio run -e pico_tinyusb_as923          # Asia 923 MHz
+```
+
+To pin non-preset frequencies without adding an env, override the kHz
+defines from `build_flags` (kHz gives sub-MHz precision):
+
+```ini
+build_flags = -DUSE_TINYUSB -DFLATSAT_UPLINK_FREQ_KHZ=915500 \
+                            -DFLATSAT_DOWNLINK_FREQ_KHZ=913500
+```
+
+`regions.h` holds the preset table. When editing it, mirror the change in
+`../Attacks/lib/regions.py` so the attack scripts stay tuned to what the
+firmware is actually listening on.
 
 ## Pre-built binary
 
 `build/flatsat-firmware.uf2` is a build of this exact source, generated
-with the `platformio.ini` above (`pio run`, `pico_tinyusb` environment) —
-RAM 8.4% (22016/262144 bytes), Flash 7.8% (163756/2093056 bytes). To flash:
+with the `platformio.ini` above (`pio run`, `pico_tinyusb_us915`
+environment — the US915 region preset) — RAM 8.4% (22016/262144 bytes),
+Flash 7.8% (163756/2093056 bytes). To flash:
 hold the Pico's BOOTSEL button while plugging it in over USB (it enumerates
 as a mass-storage volume), then copy the `.uf2` onto it — the Pico reboots
 on its own into the new firmware. **Not verified on real hardware:** this
