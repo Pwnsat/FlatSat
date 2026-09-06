@@ -37,6 +37,10 @@ from pwnsat_lora_rx import PwnsatLoraRX  # noqa: E402
 DOWNLINK_FREQ_HZ = 916_000_000
 DOWNLINK_BW_HZ = 250_000
 DOWNLINK_SF = 7
+# RTL-SDR (R820T) is unreliable sampling at the 250 kHz channel rate
+# directly ("PLL not locked", fractional-resampler jitter). Oversample at
+# a clean 4x and let PwnsatLoraRX's freq_xlating_fir_filter decimate.
+RTLSDR_SOURCE_SAMP_RATE = 1_000_000
 
 
 @dataclass
@@ -54,7 +58,8 @@ class RtlSdrRX:
 
     def __init__(self, *, frequency: int = DOWNLINK_FREQ_HZ,
                 bandwidth: int = DOWNLINK_BW_HZ, sf: int = DOWNLINK_SF,
-                rf_gain: int = 30, zmq_port: int = 0, verbose: bool = True):
+                rf_gain: int = 30, zmq_port: int = 0, verbose: bool = True,
+                source_samp_rate: int = RTLSDR_SOURCE_SAMP_RATE):
         self.verbose = verbose
         if not zmq_port:
             zmq_port = _free_local_port()
@@ -63,6 +68,7 @@ class RtlSdrRX:
         self._tb = PwnsatLoraRX(
             device_args="rtlsdr", frequency=frequency, bandwidth=bandwidth,
             zmq_address=self._zmq_address, spread_factor=sf, rf_gain=rf_gain,
+            source_samp_rate=source_samp_rate,
         )
 
         self._ctx = zmq.Context()

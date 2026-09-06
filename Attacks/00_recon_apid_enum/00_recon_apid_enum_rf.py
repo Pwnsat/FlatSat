@@ -43,7 +43,7 @@ _check_gnuradio()
 
 from pwnsat_lora_tx import UPLINK_FREQ_HZ, transmit_packet  # noqa: E402
 from pwnsat_catsniffer_rx import CatSnifferRX  # noqa: E402
-from pwnsat_rtlsdr_rx import RtlSdrRX  # noqa: E402
+from pwnsat_rtlsdr_rx import RtlSdrRX, DOWNLINK_FREQ_HZ  # noqa: E402
 
 ERROR_TM_APID = 0x009
 
@@ -74,7 +74,7 @@ def _probe_apid_once(apid: int, *, seq: int, tx_gain: int, listen_s: float,
         # snr_db only exists on CatSnifferRX frames; inert on RtlSdrRX.
         snr = getattr(frame, "snr_db", None)
         if snr is not None and snr < min_snr:
-            # Almost always our own uplink leaking into the RX (918 vs 916MHz).
+            # Almost always our own uplink leaking into the RX (uplink vs downlink freq).
             if verbose:
                 print(f"    (ignoring weak/garbled frame, SNR={snr:.1f}dB "
                       f"-- likely our own TX leaking into the RX, not a real reply)")
@@ -183,7 +183,8 @@ def main() -> None:
           f"(0x{args.start:02X}-0x{args.end:02X}), skip={sorted(skip)}")
     print("Black-box recon: findings #4 (no rate-limit) + #21")
     print("(unauthenticated recon) + #22 (no TC/TM check) combined.")
-    print(f"TX: HackRF (918MHz uplink).  RX: {args.rx_device} (916MHz downlink, "
+    print(f"TX: HackRF ({UPLINK_FREQ_HZ/1e6:.1f}MHz uplink).  RX: {args.rx_device} "
+          f"({DOWNLINK_FREQ_HZ/1e6:.1f}MHz downlink, "
           "continuous) -- see TWO-RADIO SETUP note in this file's header.")
     print("=" * 66)
 
