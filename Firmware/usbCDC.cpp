@@ -40,12 +40,6 @@ static void obcResetUSBStack(void) {
   }
 }
 
-static void obcWaitConnectionCore0(void) {
-  while (!Serial) {
-    delay(1000);
-  }
-}
-
 static void obcWaitConnectionCore1(void) {
   while (!USBRadioLink) {
     delay(1000);
@@ -55,8 +49,11 @@ static void obcWaitConnectionCore1(void) {
 void obcConfigureCore0(void) {
   obcSetupUSB();
 
+  // Ne pas bloquer le boot sur l'ouverture de la console fsat1 : les radios
+  // (initialisees juste apres ce retour dans setup()) doivent demarrer que
+  // quelqu'un ouvre la console ou non. La console reste utilisable des que
+  // quelqu'un l'ouvre, meme tardivement.
   Serial.begin(921600);
-  obcWaitConnectionCore0();
 
   if (CFG_TUD_CDC < 2) {
     Serial.printf(
